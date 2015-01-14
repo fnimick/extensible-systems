@@ -1,0 +1,5 @@
+[package]
+
+name = "average"
+version = "0.0.1"
+authors = ["ekelly <eric.k.125@gmail.com>"]
