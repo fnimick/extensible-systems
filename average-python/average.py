@@ -6,7 +6,7 @@ import sys
 """
 Use: ./average < [data file]
 
-This program accepts a rainfall data file on stdin and provider output on
+This program accepts a rainfall data file on stdin and provides output on
 stdout.
 
 In the rainfall data file, each input line contains one raw measurement.
