@@ -14,9 +14,7 @@ fn main() {
         } else {
             match trimmed.parse::<f64>() {
                 Some(x) if x >= 0.0 => data.push(x),
-                _ => {
-                    continue;
-                }
+                _ => {}
             }
         }
     }
