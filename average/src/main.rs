@@ -1,3 +1,4 @@
+#![allow(unstable)]
 use std::io;
 
 fn main() {
@@ -40,7 +41,7 @@ fn average(data: &Vec<f64>) -> Option<f64> {
 }
 
 #[cfg(test)]
-mod AverageTests {
+mod average_tests {
     use super::average;
 
     #[test]
