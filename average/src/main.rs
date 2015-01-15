@@ -1,5 +1,4 @@
 use std::io;
-use std::cmp::Ordering;
 
 fn main() {
     let mut stdin = io::stdin();
@@ -13,15 +12,14 @@ fn main() {
             break;
         } else {
             match trimmed.parse::<f64>() {
-                Some(x) => data.push(x),
-                None    => {
+                Some(x) if x >= 0.0 => data.push(x),
+                _ => {
                     continue;
                 }
             }
         }
     }
 
-    data.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
     let avg = average(&data);
 
     println!("Average: {}", avg.unwrap());
@@ -48,7 +46,7 @@ mod AverageTests {
     #[test]
     fn test_average() {
         let v1: Vec<f64> = vec![1f64, 2f64, 3f64];
-        assert_eq!(2, average(&v1));
+        assert_eq!(2.0f64, average(&v1).unwrap());
     }
 }
 
