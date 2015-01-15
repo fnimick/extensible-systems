@@ -50,21 +50,26 @@ fn main() {
 
 }
 
-/// values is a non-empty list of measurements, which are floating point numbers
-/// bound defines the interval above and below the average, inclusive,
-/// and defaults to 5.
-/// If values is empty, returns None.
-/// Otherwise, returns Some(tuple):
-/// (the average of the measurements,
-///  the number of measurements in the interval [average, average + bound],
-///  the number of measurements in the interval [average - bound, average])
+#[doc = "
+    Averages the passed in array of values and provides statistics
+    about measurements in an interval around the average.
+
+    values is a list of measurements, which are floating point numbers
+    bound defines the interval above and below the average, inclusive,
+    and defaults to 5.
+    If values is empty, returns None.
+    Otherwise, returns Some(tuple):
+    (the average of the measurements,
+     the number of measurements in the interval [average, average + bound],
+     the number of measurements in the interval [average - bound, average])
+ "]
 fn average(values: &Vec<f64>, bound: Option<i64>) -> Option<(f64, i64, i64)> {
     if values.len() == 0 {
         return None;
     }
     let my_bound = bound.unwrap_or(5) as f64;
     let mut count = 0i64;
-    let mut sum = 0.0f64;
+    let mut sum = 0f64;
     for &v in values.iter() {
         sum = sum + v;
         count = count + 1;
