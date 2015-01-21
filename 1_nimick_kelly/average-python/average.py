@@ -22,6 +22,9 @@ The output consists of three lines:
 - the number of measurements in the interval [average,average + 5]
 - the number of measurements in the interval [average - 5,average]
 
+TESTING
+run 'nosetests' in the tests/ directory.
+you must have the 'nose' python package installed.
 """
 
 def main():
