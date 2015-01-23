@@ -8,12 +8,10 @@ valid_file - A file containing valid rainfall data (for testing)
 
 Average-python: The Python average rainfall program
 ---------------
-__init__.py - File necessary for Python to see folder as package
 average@ - symbolic link to average.py
 average.py - program code
-tests/__init__.py - File necessary to treat folder as package
 tests/invalid_file - invalid rainfall testing data
-tests/test_main.py - python tests for average
+tests/test_main.py - python tests for average, run using 'nosetests'
 tests/valid_file - valid rainfall testing data
 
 1_nimick_kelly.pdf - Memo describing the Python language
