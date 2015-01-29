@@ -33,11 +33,10 @@ fn main() {
 }
 
 fn wc(contents: String) -> (usize, usize, usize) {
-    let mut lines = contents.as_slice().lines();
     let character_count: usize = contents.len();
     let mut word_count: usize = 0;
     let mut line_count: usize = 0;
-    for line in lines {
+    for line in contents.as_slice().lines() {
         line_count = line_count + 1;
         let words: Vec<&str> = line.words().collect();
         word_count = word_count + words.len();
