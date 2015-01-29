@@ -18,31 +18,30 @@ fn main() {
     for argument in args.iter() {
         // Verify that it is indeed a file
         let p = Path::new(argument);
-        let file = match File::open_mode(&p, Open, Read) {
+        let mut file = match File::open_mode(&p, Open, Read) {
             Ok(f) => f,
             Err(e) => panic!("Could not open {}. Error: {}", argument, e),
         };
-        let (lines, words, chars) = wc(file);
-        println!("{}\t{}\t{}\t{}", lines, words, chars, argument);
+        match file.read_to_string() {
+            Ok(txt) => {
+                let (lines, words, chars) = wc(txt);
+                println!("{}\t{}\t{}\t{}", lines, words, chars, argument);
+            },
+            Err(e)  => panic!("Could not read file. Error: {}", e),
+        }
     }
 }
 
-fn wc(file: File) -> (usize, usize, usize) {
-    let mut buf_reader = BufferedReader::new(file);
+fn wc(contents: String) -> (usize, usize, usize) {
     let mut character_count: usize = 0;
     let mut word_count: usize = 0;
     let mut line_count: usize = 0;
-    loop {
-        let line = buf_reader.read_line();
-        match line {
-            Ok(txt) => {
-                line_count = line_count + 1;
-                character_count = character_count + txt.len();
-                let words: Vec<&str> = txt.words().collect();
-                word_count = word_count + words.len();
-            },
-            Err(..) => { break; },
-        }
+    let mut lines = contents.as_slice().lines();
+    for line in lines {
+        line_count = line_count + 1;
+        character_count = character_count + line.len();
+        let words: Vec<&str> = line.words().collect();
+        word_count = word_count + words.len();
     }
     (line_count, word_count, character_count)
 }
