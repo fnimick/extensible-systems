@@ -1,6 +1,6 @@
 #![allow(unstable)]
 use std::os;
-use std::io::{BufferedReader, File, Open, Read};
+use std::io::{File, Open, Read};
 
 #[doc = "
 Use: ./wc <filename>
@@ -33,13 +33,12 @@ fn main() {
 }
 
 fn wc(contents: String) -> (usize, usize, usize) {
-    let mut character_count: usize = 0;
+    let mut lines = contents.as_slice().lines();
+    let character_count: usize = contents.len();
     let mut word_count: usize = 0;
     let mut line_count: usize = 0;
-    let mut lines = contents.as_slice().lines();
     for line in lines {
         line_count = line_count + 1;
-        character_count = character_count + line.len();
         let words: Vec<&str> = line.words().collect();
         word_count = word_count + words.len();
     }
