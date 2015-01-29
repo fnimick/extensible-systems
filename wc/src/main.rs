@@ -1,6 +1,6 @@
 #![allow(unstable)]
 use std::os;
-use std::io::{File, Open, Read};
+use std::io::{BufferedReader, File, Open, Read};
 
 #[doc = "
 Use: ./wc <filename>
@@ -22,10 +22,27 @@ fn main() {
             Ok(f) => f,
             Err(e) => panic!("Could not open {}. Error: {}", argument, e),
         };
-        wc(&file);
+        let (lines, words, chars) = wc(file);
+        println!("{}\t{}\t{}\t{}", lines, words, chars, argument);
     }
 }
 
-fn wc(file: &File) {
-    println!("{}", file.path().as_str().unwrap());
+fn wc(file: File) -> (usize, usize, usize) {
+    let mut buf_reader = BufferedReader::new(file);
+    let mut character_count: usize = 0;
+    let mut word_count: usize = 0;
+    let mut line_count: usize = 0;
+    loop {
+        let line = buf_reader.read_line();
+        match line {
+            Ok(txt) => {
+                line_count = line_count + 1;
+                character_count = character_count + txt.len();
+                let words: Vec<&str> = txt.words().collect();
+                word_count = word_count + words.len();
+            },
+            Err(..) => { break; },
+        }
+    }
+    (line_count, word_count, character_count)
 }
