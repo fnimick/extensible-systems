@@ -32,6 +32,7 @@ fn main() {
     }
 }
 
+/*
 fn wc(contents: String) -> (usize, usize, usize) {
     let character_count: usize = contents.len();
     let mut word_count: usize = 0;
@@ -42,4 +43,27 @@ fn wc(contents: String) -> (usize, usize, usize) {
         word_count = word_count + words.len();
     }
     (line_count, word_count, character_count)
+}*/
+
+fn wc(contents: String) -> (usize, usize, usize) {
+    let mut character_count: usize = 0;
+    let mut word_count: usize = 0;
+    let mut line_count: usize = 0;
+    let mut is_word: bool = false;
+    for c in contents.chars() {
+        character_count += 1;
+        if !c.is_whitespace() {
+            if !is_word {
+                word_count += 1;
+                is_word = true;
+            }
+        } else {
+            is_word = false;
+            if c == '\n' {
+                line_count += 1;
+            }
+        }
+    }
+    (line_count, word_count, character_count)
 }
+
