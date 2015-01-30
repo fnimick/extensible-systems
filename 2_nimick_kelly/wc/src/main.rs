@@ -70,6 +70,10 @@ fn wc(contents: String) -> (usize, usize, usize) {
 mod wc_tests {
     use super::{open_file, wc};
 
+    fn setup_test() {
+        panic!("test");
+    }
+
     #[test]
     fn test_wc() {
         assert_eq!((0, 0, 0), wc(strr("")));
@@ -78,8 +82,14 @@ mod wc_tests {
     }
 
     #[test]
+    #[should_fail]
+    fn test_open_nonexistent_file() {
+        open_file("nonexistent.txt");
+    }
+
+    #[test]
     fn test_bible() {
-        assert_eq!((92870, 969905, 5278908), wc(open_file("bible-plain-text.txt")));
+        assert_eq!((92870, 969905, 5371778), wc(open_file("bible-plain-text.txt")));
     }
 
     // Because I got tired of typing String::from_str(...)
