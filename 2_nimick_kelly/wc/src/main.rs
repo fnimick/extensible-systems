@@ -70,10 +70,6 @@ fn wc(contents: String) -> (usize, usize, usize) {
 mod wc_tests {
     use super::{open_file, wc};
 
-    fn setup_test() {
-        panic!("test");
-    }
-
     #[test]
     fn test_wc() {
         assert_eq!((0, 0, 0), wc(strr("")));
