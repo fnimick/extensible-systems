@@ -1,10 +1,17 @@
 #![allow(unstable)]
+extern crate regex;
+
 use std::collections::HashMap;
 use std::io::BufferedReader;
+use regex::Regex;
 
 #[doc="
 Determine the word count of the words passed to stdin. Stdin is
 considered over when an EOF is reached.
+
+Assumptions: words are compared in a case-sensitive way. Hello != hello.
+             words are composed of characters a-z
+             Punctuation does not count as part of the word.
 
 Output one line per word, with its associated word count next to it.
 "]
@@ -14,6 +21,40 @@ fn main() {
     use std::io::stdio::StdinReader;
 
     let stdin: BufferedReader<StdinReader> = BufferedReader::new(io::stdin());
+    let word_count = parse_lines(stdin);
+    for (word, count) in word_count.iter() {
+        println!("{}: {}", word, count);
+    }
+}
+
+/// Remove any preceeding or trailing non a-z characters
+fn trim_to_word(word: &str) -> Option<&str> {
+    let re = match Regex::new("[a-zA-Z]+(\'[a-zA-Z]){0,1}") {
+        Ok(re)    => re,
+        Err(..)   => panic!("Could not compile regex")
+    };
+    match re.captures(word) {
+        Some(cap)  => Some(cap.at(0).unwrap()),
+        None       => None,
+    }
+}
+
+#[cfg(test)]
+mod trim_to_word_tests {
+    use super::trim_to_word;
+
+    #[test]
+    fn tests() {
+        test_trim_to_word("hello", "hello");
+        test_trim_to_word("Hello,", "Hello");
+        test_trim_to_word("!Hello,", "Hello");
+        test_trim_to_word("won't!", "won't");
+        //test_trim_to_word("abc-def!", "abc-def");
+    }
+
+    fn test_trim_to_word(check: &str, expect: &str) {
+        assert_eq!(trim_to_word(check).unwrap(), expect);
+    }
 }
 
 fn parse_lines<R: Reader>(mut reader: BufferedReader<R>) -> HashMap<String, usize> {
@@ -21,7 +62,10 @@ fn parse_lines<R: Reader>(mut reader: BufferedReader<R>) -> HashMap<String, usiz
     for line in reader.lines() {
         let l = line.unwrap();
         for word in l.words() {
-            inc_count(&mut wordcounts, String::from_str(word));
+            match trim_to_word(word) {
+                Some(w) => inc_count(&mut wordcounts, String::from_str(w)),
+                None    => (),
+            }
         }
     }
     wordcounts
@@ -36,8 +80,8 @@ mod parse_lines_tests {
     #[test]
     fn tests() {
         let mut expected: HashMap<String, usize> = HashMap::new();
-        expected.insert(String::from_str("Hello,"), 1);
-        expected.insert(String::from_str("World!"), 2);
+        expected.insert(String::from_str("Hello"), 1);
+        expected.insert(String::from_str("World"), 2);
         expected.insert(String::from_str("Today"), 1);
         expected.insert(String::from_str("is"), 1);
         expected.insert(String::from_str("the"), 2);
