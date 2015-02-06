@@ -10,9 +10,9 @@ use regex::Regex;
 Determine the word count of the words passed to stdin. Stdin is
 considered over when an EOF is reached.
 
-Assumptions: words are compared in a case-sensitive way. Hello != hello.
+Assumptions: words are compared in a case-insensitive way. Hello == hello.
              words are composed of characters a-z
-             Punctuation does not count as part of the word.
+             Punctuation (excluding apostrophes) does not count as part of the word.
 
 Output one line per word, with its associated word count next to it.
 "]
@@ -28,7 +28,8 @@ fn main() {
     }
 }
 
-/// Remove any preceeding or trailing non a-z characters
+/// Remove any preceeding or trailing non a-z or A-Z characters,
+/// potentially including one appropriately placed apostrophe
 fn trim_to_word(word: &str) -> Option<&str> {
     let regex = Regex::new("[a-zA-Z]+(\'[a-zA-Z]+){0,1}");
     let re = match regex {
@@ -51,7 +52,10 @@ mod trim_to_word_tests {
         test_trim_to_word("Hello,", "Hello");
         test_trim_to_word("!Hello,", "Hello");
         test_trim_to_word("won't!", "won't");
-        //test_trim_to_word("abc-def!", "abc-def");
+        test_trim_to_word("'won't!'", "won't");
+        test_trim_to_word("\"Hello,\"", "Hello");
+        test_trim_to_word("\"Hello.\"", "Hello");
+        test_trim_to_word("\"won't''!", "won't");
     }
 
     fn test_trim_to_word(check: &str, expect: &str) {
@@ -59,6 +63,9 @@ mod trim_to_word_tests {
     }
 }
 
+/// Reads input from BufferedReader and parses individual words,
+/// then increments their counts accordingly.
+/// Returns a HashMap mapping words to their frequencies.
 fn parse_lines<R: Reader>(mut reader: BufferedReader<R>) -> HashMap<String, usize> {
     let mut wordcounts: HashMap<String, usize> = HashMap::new();
     for line in reader.lines() {
@@ -110,15 +117,13 @@ mod parse_lines_tests {
             }
             found_keys.push(word);
         }
-        /*
-        for key in found_keys.iter() {
-            output.remove(key);
-        }
-        assert_eq!(output.len(), 0);
-        */
     }
 }
 
+/// Given a word and a reference to a HashMap of words to frequencies (usize),
+/// converts the word to lower case and increments its associated frequency
+/// in the map.
+/// If the word is not present, it is added to the map with frequency 1.
 fn inc_count(map: &mut HashMap<String, usize>, word: String) {
     let lower = word.to_ascii_lowercase();
     match map.get_mut(&lower) {
