@@ -7,14 +7,18 @@ use std::ascii::AsciiExt;
 use regex::Regex;
 
 #[doc="
-Determine the word count of the words passed to stdin. Stdin is
-considered over when an EOF is reached.
+Determine the word count of the words passed to stdin.
+Stops when an EOF is reached.
 
-Assumptions: words are compared in a case-insensitive way. Hello == hello.
-             words are composed of characters a-z
+Assumptions: Words are compared in a case-insensitive way. Hello == hello.
+             Words are composed of characters a-zA-Z.
+             Apostrophes are considered part of the word only if there are
+             characters a-zA-Z both to the left and to the right.  This allows
+             for idiomatic terms such as \"fo'c'sle\".
              Punctuation (excluding apostrophes) does not count as part of the word.
 
 Output one line per word, with its associated word count next to it.
+Words are not output in any specified order.
 "]
 #[cfg(not(test))]
 fn main() {
@@ -29,9 +33,10 @@ fn main() {
 }
 
 /// Remove any preceeding or trailing non a-z or A-Z characters,
-/// potentially including one appropriately placed apostrophe
+/// and truncates words on non-apostrophe punctuation (or two repeated
+/// apostrophes) contained within.
 fn trim_to_word(word: &str) -> Option<&str> {
-    let regex = Regex::new("[a-zA-Z]+(\'[a-zA-Z]+){0,1}");
+    let regex = Regex::new("[a-zA-Z]+(\'[a-zA-Z]+)*");
     let re = match regex {
         Ok(re)    => re,
         Err(..)   => panic!("Could not compile regex")
@@ -54,8 +59,11 @@ mod trim_to_word_tests {
         test_trim_to_word("won't!", "won't");
         test_trim_to_word("'won't!'", "won't");
         test_trim_to_word("\"Hello,\"", "Hello");
+        test_trim_to_word("\"Hello,world\"", "Hello");
         test_trim_to_word("\"Hello.\"", "Hello");
         test_trim_to_word("\"won't''!", "won't");
+        test_trim_to_word("\"won't''this!", "won't");
+        test_trim_to_word("'fo'c'sle'!", "fo'c'sle");
     }
 
     fn test_trim_to_word(check: &str, expect: &str) {
