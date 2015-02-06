@@ -3,6 +3,7 @@ extern crate regex;
 
 use std::collections::HashMap;
 use std::io::BufferedReader;
+use std::ascii::AsciiExt;
 use regex::Regex;
 
 #[doc="
@@ -29,7 +30,8 @@ fn main() {
 
 /// Remove any preceeding or trailing non a-z characters
 fn trim_to_word(word: &str) -> Option<&str> {
-    let re = match Regex::new("[a-zA-Z]+(\'[a-zA-Z]){0,1}") {
+    let regex = Regex::new("[a-zA-Z]+(\'[a-zA-Z]+){0,1}");
+    let re = match regex {
         Ok(re)    => re,
         Err(..)   => panic!("Could not compile regex")
     };
@@ -80,15 +82,17 @@ mod parse_lines_tests {
     #[test]
     fn tests() {
         let mut expected: HashMap<String, usize> = HashMap::new();
-        expected.insert(String::from_str("Hello"), 1);
-        expected.insert(String::from_str("World"), 2);
-        expected.insert(String::from_str("Today"), 1);
+        expected.insert(String::from_str("hello"), 1);
+        expected.insert(String::from_str("world"), 2);
+        expected.insert(String::from_str("today"), 1);
         expected.insert(String::from_str("is"), 1);
         expected.insert(String::from_str("the"), 2);
         expected.insert(String::from_str("best"), 1);
         expected.insert(String::from_str("day"), 1);
         expected.insert(String::from_str("in"), 1);
-        parse_lines_expect("Hello, World!\nToday is the best day in the World!",
+        expected.insert(String::from_str("whole"), 1);
+        expected.insert(String::from_str("wide"), 1);
+        parse_lines_expect("Hello, World!\nToday is the best day in the whole-wide World!",
                            expected);
     }
 
@@ -116,11 +120,12 @@ mod parse_lines_tests {
 }
 
 fn inc_count(map: &mut HashMap<String, usize>, word: String) {
-    match map.get_mut(&word) {
+    let lower = word.to_ascii_lowercase();
+    match map.get_mut(&lower) {
         Some(count) => {*count += 1; return;},
         None => {},
     }
-    map.insert(word, 1);
+    map.insert(lower, 1);
 }
 
 #[cfg(test)]
@@ -132,7 +137,7 @@ mod inc_count_tests {
     fn test_inc_count() {
         let mut map = HashMap::new();
         inc_count(&mut map, String::from_str("test"));
-        inc_count(&mut map, String::from_str("test"));
+        inc_count(&mut map, String::from_str("Test"));
         inc_count(&mut map, String::from_str("one"));
         assert!(!map.contains_key(&String::from_str("nope")));
         assert_eq!(*map.get(& String::from_str("test")).unwrap(), 2);
