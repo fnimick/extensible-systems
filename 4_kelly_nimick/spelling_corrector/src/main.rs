@@ -1,7 +1,6 @@
 #![allow(unstable)]
 use std::collections::HashMap;
-use std::io::BufferedReader;
-use std::ascii::AsciiExt;
+use std::io::{File, IoResult, BufferedReader};
 use std::os;
 
 #[doc="
@@ -14,26 +13,25 @@ fn main() {
     use std::io::stdio::StdinReader;
 
     let mut args = os::args();
-    let train = match args.iter().skip(1).take(1).next() {
+    let training_file = match args.iter().skip(1).take(1).next() {
         Some(file) => file.as_slice(),
         None       => panic!("Must provide training file")
     };
-    let file_reader = open_file(train);
+    let file_reader = open_file(training_file);
     let dictionary = train(file_reader);
     let stdin: BufferedReader<StdinReader> = BufferedReader::new(io::stdin());
     correct_spelling(stdin, dictionary);
 }
 
-fn open_file(filename: &str) -> BufferedReader<Reader> {
-    use std::io::File;
-
+fn open_file(filename: &str) -> BufferedReader<IoResult<File>> {
     let file = File::open(&Path::new(filename));
     BufferedReader::new(file)
 }
 
-fn train<T: Reader>(file: BufferedReader<T>) -> HashMap<String, usize> {
-    HashMap::new();
+fn train<R: Reader>(file: BufferedReader<R>) -> HashMap<String, usize> {
+    let x: HashMap<String, usize> = HashMap::new();
+    x
 }
 
-fn correct_spelling<T>(words: BufferedReader<T>, dict: HashMap<String, usize>) {
+fn correct_spelling<R: Reader>(words: BufferedReader<R>, dict: HashMap<String, usize>) {
 }
