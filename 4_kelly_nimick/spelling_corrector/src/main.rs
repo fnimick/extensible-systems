@@ -173,7 +173,7 @@ mod delete_letter_test {
 fn insert_letter(word: String) -> HashSet<String> {
     let mut variations = HashSet::new();
 
-    // Delete one letter
+    // Insert one letter
     let a = 97;
     let z = a + 26;
     for l in 0..(z-a) {
