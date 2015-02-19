@@ -2,13 +2,16 @@
 extern crate regex;
 
 use std::char;
+use std::str;
 use regex::Regex;
 use std::ascii::AsciiExt;
 use std::collections::{HashSet, HashMap};
 use std::io::{File, IoResult, BufferedReader};
 use std::num::ToPrimitive;
+use std::iter::IteratorExt;
 
 static NO_SPELLING_SUGGESTION: &'static str = "-";
+static ALPHABET: &'static str = "abcdefghijklmnopqrstuvwxyz";
 
 #[doc="
     Assumptions: When this program is not given a training corpus,
@@ -81,6 +84,182 @@ fn train<R: Reader>(mut file: BufferedReader<R>) -> HashMap<String, usize> {
     }
     x
 }
+
+/// Given a word, returns a vector containing slices of the word from
+/// (0-i, i-<end of word>) for every i from 0 to the word's length.
+fn split_word<'a>(word: &'a String) -> Vec<(&'a str, &'a str)> {
+    let mut splits = Vec::new();
+    let len = word.len();
+    for i in range(0, len) {
+        splits.push((word.slice(0, i), word.slice(i, len)));
+    }
+    splits
+}
+
+/// Given a split word, returns a HashMap containing all permutations of the
+/// word resulting from the deletion of a single letter.
+fn deletions(splits: &Vec<(&str, &str)>) -> HashSet<String> {
+    splits.iter().filter_map(|&(front, back)| {
+        if back.len() > 0 {
+            Some(String::from_str(front) + (back.slice_from(1)))
+        }
+        else { None }
+    }).collect()
+}
+
+/// Given a split word, returns a HashMap containing all permutations of the
+/// word resulting from the transposition of two adjacent letters.
+fn transpositions(splits: &Vec<(&str, &str)>) -> HashSet<String> {
+    splits.iter().filter_map(|&(front, back)| {
+        if back.len() > 1 {
+            let (one, s1) = back.slice_shift_char().unwrap();
+            let (two, s2) = s1.slice_shift_char().unwrap();
+            let mut s = String::from_str(front);
+            s.push(two);
+            s.push(one);
+            s.push_str(s2);
+            Some(s)
+        }
+        else { None }
+    }).collect()
+}
+
+/// Given a split word, returns a HashMap containing all permutations of the
+/// word resulting from inserting an additional letter at any position.
+fn insertions(splits: &Vec<(&str, &str)>) -> HashSet<String> {
+    let mut results = HashSet::new();
+    for &(front, back) in splits.iter() {
+        for c in ALPHABET.chars() {
+            let mut s = String::from_str(front);
+            s.push(c);
+            s.push_str(back);
+            results.insert(s);
+        }
+    }
+    results
+}
+
+/// Given a split word, returns a HashMap containing all permutations of the
+/// word resulting from replacing a letter at any position.
+fn replacements(splits: &Vec<(&str, &str)>) -> HashSet<String> {
+    let mut results = HashSet::new();
+    for &(front, back) in splits.iter() {
+        for c in ALPHABET.chars() {
+            if back.len() > 0 {
+                let mut s = String::from_str(front);
+                s.push(c);
+                s.push_str(back.slice_from(1));
+                results.insert(s);
+            }
+        }
+    }
+    results
+}
+
+/// Given a set of words, returns a HashMap containing only words that are in
+/// the dictionary. If no words are valid, returns an empty HashMap.
+fn known(words: &HashSet<String>, dict: &HashMap<String, usize>) -> HashSet<String> {
+    let mut recognized = HashSet::new();
+    for word in words.iter() {
+        if dict.contains_key(word) {
+            recognized.insert(word.clone());
+        }
+    }
+    recognized
+}
+
+/// Given a word, returns a hashmap containing all possible words with edit
+/// distance 1 from the given word.
+/// TODO find a better way to do this using collect() ?
+fn edits_1(word: &String) -> HashSet<String> {
+    let splits = &split_word(word);
+    let mut results = HashSet::new();
+    for s in deletions(splits).iter()
+        .chain(insertions(splits).iter())
+        .chain(replacements(splits).iter())
+        .chain(transpositions(splits).iter()) {
+            results.insert(s.clone());
+        }
+    results
+}
+
+/// Given a set of words with edit distance 1, return a set of words
+/// edit distance 2 away from the original source word.
+/// Only produces words that are found in the dictionary (to save memory)
+fn edits_2(edit_1_set: &HashSet<String>, dict: &HashMap<String, usize>) -> HashSet<String> {
+    let mut results = HashSet::new();
+    for edit_1 in edit_1_set.iter() {
+        for edit_2 in edits_1(edit_1).iter() {
+            if dict.contains_key(edit_2) {
+                results.insert(edit_2.clone());
+            }
+        }
+    }
+    results
+}
+
+/// Given a word and a dictionary, returns an option:
+/// Some(String) if the word is misspelled, with the String indicating the
+/// best replacement;
+/// None if the word is not misspelled.
+fn correct(word: String, dict: &HashMap<String, usize>) -> Option<String> {
+    let mut corrected_set: HashSet<String> = HashSet::new();
+    let mut word_set = HashSet::new();
+    word_set.insert(word.clone());
+    let no_change = known(&word_set, dict);
+    if no_change.is_empty() {
+        let one = edits_1(&word);
+        let one_known = known(&one, dict);
+        if one_known.is_empty() {
+            let two_known = edits_2(&one, dict);
+            if two_known.is_empty() {
+                return Some(String::from_str(NO_SPELLING_SUGGESTION));
+            }
+            corrected_set = two_known;
+        } else {
+            corrected_set = one_known;
+        }
+    } else {
+        return None;
+    }
+
+    let mut max_freq: usize = 0;
+    let mut best_word = String::new();
+    for possibility in corrected_set.into_iter() {
+        match dict.get(&possibility) {
+            Some(&frequency) => {
+                if frequency > max_freq {
+                    max_freq = frequency;
+                    best_word = possibility;
+                }
+            },
+            None => {}
+        }
+    }
+    Some(best_word)
+}
+
+#[test]
+fn test_correct() {
+    let mut file = open_file("train.txt");
+    let dict = train(file);
+
+    let rights = vec!["really", "accomplished", "spelling", "correction", "-"];
+    let wrongs = vec!["realy", "acomplishhed", "speling", "korrecttion", "wharrgarbl"];
+
+    for (right, wrong) in rights.iter().zip(wrongs.iter()) {
+        let w = correct(String::from_str(*wrong), &dict).unwrap();
+        assert_eq!(String::from_str(*right), w);
+    }
+
+}
+
+
+
+
+
+// NOTE TO ERIC: this is where I stopped
+// Everything below here is untouched
 
 fn correct_spelling(word: String, dict: &HashMap<String, usize>) -> String {
     match dict.get(word.as_slice()) {
