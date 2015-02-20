@@ -56,8 +56,8 @@ fn main() {
     for maybe_word in stdin.lines() {
         let word = maybe_word.ok().unwrap();
         match correct(word.clone(), &dictionary) {
-            Some(correction) => println!("{}, {}", word, correction),
-            None             => println!("{}, {}", word, word)
+            Some(correction) => println!("{}, {}", word.trim(), correction),
+            None             => println!("{}, {}", word.trim(), word.trim())
         }
     }
 }
