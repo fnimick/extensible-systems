@@ -82,6 +82,29 @@ fn trim_to_word(word: &str) -> Option<String> {
     }
 }
 
+#[cfg(test)]
+mod trim_to_word_tests {
+    use super::trim_to_word;
+
+    #[test]
+    fn tests() {
+        test_trim_to_word("hello", "hello");
+        test_trim_to_word("Hello,", "hello");
+        test_trim_to_word("!Hello,", "hello");
+        test_trim_to_word("won't!", "won");
+        test_trim_to_word("'won't!'", "won");
+        test_trim_to_word("\"Hello,\"", "hello");
+        test_trim_to_word("\"Hello,world\"", "hello");
+        test_trim_to_word("\"Hello.\"", "hello");
+        test_trim_to_word("\"won't''!", "won");
+        test_trim_to_word("'fo'c'sle'!", "fo");
+    }
+
+    fn test_trim_to_word(check: &str, expect: &str) {
+        assert_eq!(trim_to_word(check).unwrap(), expect);
+    }
+}
+
 /// Given a word and a reference to a HashMap of words to frequencies (usize),
 /// converts the word to lower case and increments its associated frequency
 /// in the map.
@@ -92,6 +115,23 @@ fn inc_count(map: &mut HashMap<String, usize>, word: String) {
         None => {},
     }
     map.insert(word, 1);
+}
+
+#[cfg(test)]
+mod inc_count_tests {
+    use super::{inc_count};
+    use std::collections::HashMap;
+
+    #[test]
+    fn test_inc_count() {
+        let mut map = HashMap::new();
+        inc_count(&mut map, String::from_str("test"));
+        inc_count(&mut map, String::from_str("test"));
+        inc_count(&mut map, String::from_str("one"));
+        assert!(!map.contains_key(&String::from_str("nope")));
+        assert_eq!(*map.get(& String::from_str("test")).unwrap(), 2);
+        assert_eq!(*map.get(& String::from_str("one")).unwrap(), 1);
+    }
 }
 
 /// Train the program to identify words based on the corpus of passed-in data
