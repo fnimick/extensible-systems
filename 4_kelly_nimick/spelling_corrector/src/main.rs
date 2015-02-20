@@ -9,10 +9,11 @@ times a word is used in the training file, the more 'weight'
 it's given as 'the word you wanted to spell' - assuming you
 input a misspelled word.
 
-Assumptions: When this program is not given a training corpus,
-               every word is spelled correctly
-             The training file has no misspelled words
+Assumptions: The training file has no misspelled words
              A word is only composed of A-Z characters
+             A valid word only 1 minor edit away should
+               be suggested over a more frequently used word
+               two edits away
 "]
 
 extern crate regex;
@@ -32,12 +33,12 @@ static ALPHABET: &'static str = "abcdefghijklmnopqrstuvwxyz";
     Words input on standard input will be followed by an output
     in the following format:
 
-    <word>, <word>
-        - If the word is spelled correctly
+    <word>
+        * If the word is spelled correctly
     <word>, -
-        - If the word is spelled incorrectly, but there are no suggestions
+        * If the word is spelled incorrectly, but there are no suggestions
     <word>, <suggestion>
-        - If the word is spelled incorrectly, and there is a suggestion
+        * If the word is spelled incorrectly, and there is a suggestion
 "]
 #[cfg(not(test))]
 fn main() {
@@ -54,7 +55,7 @@ fn main() {
     let dictionary = train(file_reader);
     let mut stdin: BufferedReader<StdinReader> = BufferedReader::new(io::stdin());
     for maybe_word in stdin.lines() {
-        let word = maybe_word.ok().unwrap();
+        let word = maybe_word.ok().unwrap().to_ascii_lowercase();
         let w = String::from_str(word.trim());
         match suggest(w.clone(), &dictionary) {
             Some(correction) => println!("{}, {}", w, correction),
@@ -714,6 +715,31 @@ fn get_suggestion_set(word: String, dict: &HashMap<String, usize>) -> Option<Has
     })
 }
 
+#[cfg(test)]
+mod get_suggestion_set_test {
+    use super::get_suggestion_set;
+    use std::collections::{HashSet, HashMap};
+
+    #[test]
+    fn test_get_suggestion_set() {
+        let mut dict = HashMap::new();
+        dict.insert(strr("food"), 1);
+        dict.insert(strr("room"), 1);
+        let mut expected1 = HashSet::new();
+        expected1.insert(strr("food"));
+        let mut expected2 = HashSet::new();
+        expected2.insert(strr("food"));
+        expected2.insert(strr("room"));
+        assert_eq!(get_suggestion_set(strr("fo"), &dict), Some(expected1));
+        assert_eq!(get_suggestion_set(strr("oo"), &dict), Some(expected2));
+        assert_eq!(get_suggestion_set(strr("food"), &dict), None);
+    }
+
+    fn strr(string: &str) -> String {
+        String::from_str(string)
+    }
+}
+
 /// Given a non-empty HashMap and a dictionary,
 /// returns the String that represents the best spelling suggestion.
 fn get_best_suggestion(corrected_set: HashSet<String>,
@@ -734,7 +760,28 @@ fn get_best_suggestion(corrected_set: HashSet<String>,
     best_word
 }
 
+#[cfg(test)]
+mod get_best_suggestion_test {
+    use super::get_best_suggestion;
+    use std::collections::{HashSet, HashMap};
 
+    #[test]
+    fn test_get_best_suggestion() {
+        let mut dict = HashMap::new();
+        dict.insert(strr("hello"), 3);
+        dict.insert(strr("hell"), 2);
+        dict.insert(strr("jello"), 1);
+        let mut suggestions = HashSet::new();
+        suggestions.insert(strr("hello"));
+        suggestions.insert(strr("hell"));
+        suggestions.insert(strr("jello"));
+        assert_eq!(get_best_suggestion(suggestions, &dict), strr("hello"));
+    }
+
+    fn strr(string: &str) -> String {
+        String::from_str(string)
+    }
+}
 
 /// Given a word and a dictionary, returns an option:
 /// Some(String) if the word is misspelled, with the String indicating the
@@ -762,8 +809,8 @@ mod suggest_test {
         let file = open_file("train.txt");
         let dict = train(file);
 
-        let rights = vec!["really", "accomplished", "spelling", "correction", "perminantly", "-"];
-        let wrongs = vec!["realy", "accomplishher", "spelingg", "correcttio", "permanently", "wharrgarbl"];
+        let rights = vec!["really", "accomplished", "spelling", "correction", "permanently", "-"];
+        let wrongs = vec!["realy", "accomplishher", "spelingg", "correcttio", "permanintly", "wharrgarbl"];
 
         for (right, wrong) in rights.iter().zip(wrongs.iter()) {
             let w = suggest(String::from_str(*wrong), &dict).unwrap();
