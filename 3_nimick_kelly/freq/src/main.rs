@@ -33,8 +33,7 @@ fn main() {
 }
 
 /// Remove any preceeding or trailing non a-z or A-Z characters,
-/// and truncates words on non-apostrophe punctuation (or two repeated
-/// apostrophes) contained within.
+/// and truncates words on non-apostrophe punctuation contained within.
 fn trim_to_word(word: &str) -> Option<&str> {
     let regex = Regex::new("[a-zA-Z]+(\'[a-zA-Z]+)*");
     let re = match regex {
