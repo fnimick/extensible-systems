@@ -55,9 +55,10 @@ fn main() {
     let mut stdin: BufferedReader<StdinReader> = BufferedReader::new(io::stdin());
     for maybe_word in stdin.lines() {
         let word = maybe_word.ok().unwrap();
-        match suggest(word.clone(), &dictionary) {
-            Some(correction) => println!("{}, {}", word.trim(), correction),
-            None             => println!("{}, {}", word.trim(), word.trim())
+        let w = String::from_str(word.trim());
+        match suggest(w.clone(), &dictionary) {
+            Some(correction) => println!("{}, {}", w, correction),
+            None             => println!("{}", w)
         }
     }
 }
@@ -761,8 +762,8 @@ mod suggest_test {
         let file = open_file("train.txt");
         let dict = train(file);
 
-        let rights = vec!["really", "accomplished", "spelling", "correction", "-"];
-        let wrongs = vec!["realy", "accomplishher", "spelingg", "correcttio", "wharrgarbl"];
+        let rights = vec!["really", "accomplished", "spelling", "correction", "perminantly", "-"];
+        let wrongs = vec!["realy", "accomplishher", "spelingg", "correcttio", "permanently", "wharrgarbl"];
 
         for (right, wrong) in rights.iter().zip(wrongs.iter()) {
             let w = suggest(String::from_str(*wrong), &dict).unwrap();
