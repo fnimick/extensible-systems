@@ -103,6 +103,7 @@ fn split_word<'a>(word: &'a String) -> Vec<(&'a str, &'a str)> {
 mod split_word_tests {
     use super::split_word;
 
+    #[test]
     fn test_split_word() {
         let expect = vec![("", "foo"), ("f", "oo"),
             ("fo", "o"), ("foo", "")];
