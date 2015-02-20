@@ -324,7 +324,6 @@ mod insertions_test {
     }
 }
 
-
 /// Given a split word, returns a HashMap containing all permutations of the
 /// word resulting from replacing a letter at any position.
 fn replacements(splits: &Vec<(&str, &str)>) -> HashSet<String> {
@@ -356,16 +355,13 @@ fn known(words: &HashSet<String>, dict: &HashMap<String, usize>) -> HashSet<Stri
 
 /// Given a word, returns a hashmap containing all possible words with edit
 /// distance 1 from the given word.
-/// TODO find a better way to do this using collect() ?
 fn edits_1(word: &String) -> HashSet<String> {
     let splits = &split_word(word);
-    let mut results = HashSet::new();
-    for s in deletions(splits).iter()
-        .chain(insertions(splits).iter())
-        .chain(replacements(splits).iter())
-        .chain(transpositions(splits).iter()) {
-            results.insert(s.clone());
-        }
+    let results = deletions(splits).into_iter()
+        .chain(insertions(splits).into_iter())
+        .chain(replacements(splits).into_iter())
+        .chain(transpositions(splits).into_iter())
+        .collect();
     results
 }
 
@@ -375,11 +371,7 @@ fn edits_1(word: &String) -> HashSet<String> {
 fn edits_2(edit_1_set: &HashSet<String>, dict: &HashMap<String, usize>) -> HashSet<String> {
     let mut results = HashSet::new();
     for edit_1 in edit_1_set.iter() {
-        for edit_2 in edits_1(edit_1).iter() {
-            if dict.contains_key(edit_2) {
-                results.insert(edit_2.clone());
-            }
-        }
+        results.extend(edits_1(edit_1).into_iter().filter(|w| dict.contains_key(w)))
     }
     results
 }
