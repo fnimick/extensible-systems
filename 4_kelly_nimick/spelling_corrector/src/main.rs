@@ -630,6 +630,31 @@ fn edits_1(word: &String) -> HashSet<String> {
     results
 }
 
+#[cfg(test)]
+mod edits_1_test {
+    use super::{edits_1, split_word, deletions,
+        insertions, replacements, transpositions};
+    use std::collections::HashSet;
+
+    #[test]
+    fn test_edits_1() {
+        let foo = strr("foo");
+        let word = split_word(&foo);
+        let mut expect = HashSet::new();
+        expect.extend(deletions(&word).into_iter());
+        expect.extend(insertions(&word).into_iter());
+        expect.extend(transpositions(&word).into_iter());
+        expect.extend(replacements(&word).into_iter());
+        let output = edits_1(&foo);
+        assert_eq!(output.len(), expect.len());
+        assert_eq!(output, expect);
+    }
+
+    fn strr(string: &str) -> String {
+        String::from_str(string)
+    }
+}
+
 /// Given a set of words with edit distance 1, return a set of words
 /// edit distance 2 away from the original source word.
 /// Only produces words that are found in the dictionary (to save memory)
@@ -639,6 +664,33 @@ fn edits_2(edit_1_set: &HashSet<String>, dict: &HashMap<String, usize>) -> HashS
         results.extend(edits_1(edit_1).into_iter().filter(|w| dict.contains_key(w)))
     }
     results
+}
+
+#[cfg(test)]
+mod edits_2_test {
+    use super::edits_2;
+    use std::collections::{HashSet, HashMap};
+
+    #[test]
+    fn test_edits_2() {
+        let mut edit_1_set = HashSet::new();
+        edit_1_set.insert(strr("foo"));
+        let mut dict = HashMap::new();
+        dict.insert(strr("of"), 5);
+        dict.insert(strr("food"), 3);
+        dict.insert(strr("coo"), 1);
+        dict.insert(strr("roof"), 2);
+        dict.insert(strr("bar"), 1);
+        dict.insert(strr("bard"), 1);
+        let mut expect = HashSet::new();
+        expect.insert(strr("food"));
+        expect.insert(strr("coo"));
+        assert_eq!(edits_2(&edit_1_set, &dict), expect);
+    }
+
+    fn strr(string: &str) -> String {
+        String::from_str(string)
+    }
 }
 
 /// Given a word and a dictionary, returns an option:
