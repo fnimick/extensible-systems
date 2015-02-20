@@ -34,9 +34,9 @@ static ALPHABET: &'static str = "abcdefghijklmnopqrstuvwxyz";
 
     <word>
         - If the word is spelled correctly
-    <word>: -
+    <word>, -
         - If the word is spelled incorrectly, but there are no suggestions
-    <word>: <suggestion>
+    <word>, <suggestion>
         - If the word is spelled incorrectly, and there is a suggestion
 "]
 #[cfg(not(test))]
@@ -56,7 +56,7 @@ fn main() {
     for maybe_word in stdin.lines() {
         let word = maybe_word.ok().unwrap();
         match correct(word.clone(), &dictionary) {
-            Some(correction) => println!("{}: {}", word, correction),
+            Some(correction) => println!("{}, {}", word, correction),
             None             => println!("{}", word)
         }
     }
