@@ -1,4 +1,13 @@
 #![allow(unstable)]
+
+/// Provide spelling corrections on words given via standard input
+///
+/// Words are determined to be spelled correctly by referencing a
+/// training file given to the program as an argument. The more
+/// times a word is used in the training file, the more "weight"
+/// it's given as "the word you wanted to spell" - assuming you
+/// input a misspelled word.
+
 extern crate regex;
 
 use std::char;
@@ -106,7 +115,7 @@ mod split_word_tests {
     #[test]
     fn test_split_word() {
         let expect = vec![("", "foo"), ("f", "oo"),
-            ("fo", "o"), ("foo", "")];
+                          ("fo", "o"), ("foo", "")];
         let input = String::from_str("foo");
         assert_eq!(split_word(&input), expect);
     }
