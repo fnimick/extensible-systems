@@ -93,7 +93,7 @@ fn train<R: Reader>(mut file: BufferedReader<R>) -> HashMap<String, usize> {
 fn split_word<'a>(word: &'a String) -> Vec<(&'a str, &'a str)> {
     let mut splits = Vec::new();
     let len = word.len();
-    for i in range(0, len) {
+    for i in range(0, len + 1) {
         splits.push((word.slice(0, i), word.slice(i, len)));
     }
     splits
@@ -411,7 +411,7 @@ fn test_correct() {
     let dict = train(file);
 
     let rights = vec!["really", "accomplished", "spelling", "correction", "-"];
-    let wrongs = vec!["realy", "acomplishhed", "speling", "korrecttion", "wharrgarbl"];
+    let wrongs = vec!["realy", "accomplishher", "spelingg", "correcttio", "wharrgarbl"];
 
     for (right, wrong) in rights.iter().zip(wrongs.iter()) {
         let w = correct(String::from_str(*wrong), &dict).unwrap();
