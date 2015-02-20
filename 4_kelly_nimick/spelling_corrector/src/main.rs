@@ -595,6 +595,29 @@ fn known(words: &HashSet<String>, dict: &HashMap<String, usize>) -> HashSet<Stri
     recognized
 }
 
+#[cfg(test)]
+mod known_test {
+    use super::known;
+    use std::collections::{HashSet, HashMap};
+
+    #[test]
+    fn test_known() {
+        let mut dict = HashMap::new();
+        dict.insert(strr("hello"), 2);
+        dict.insert(strr("world"), 1);
+        let mut words = HashSet::new();
+        words.insert(strr("hello"));
+        words.insert(strr("word"));
+        let mut expected = HashSet::new();
+        expected.insert(strr("hello"));
+        assert_eq!(known(&words, &dict), expected);
+    }
+
+    fn strr(string: &str) -> String {
+        String::from_str(string)
+    }
+}
+
 /// Given a word, returns a hashmap containing all possible words with edit
 /// distance 1 from the given word.
 fn edits_1(word: &String) -> HashSet<String> {
