@@ -14,6 +14,8 @@ static NO_SPELLING_SUGGESTION: &'static str = "-";
 static ALPHABET: &'static str = "abcdefghijklmnopqrstuvwxyz";
 
 #[doc="
+    TODO: Better doc string
+
     Assumptions: When this program is not given a training corpus,
                    every word is spelled correctly
 "]
@@ -38,6 +40,7 @@ fn main() {
     }
 }
 
+/// Open the file as given by filename in the form of a Buffered Reader
 fn open_file(filename: &str) -> BufferedReader<File> {
     let file = File::open(&Path::new(filename));
     BufferedReader::new(file.ok().expect("couldn't open file"))
@@ -70,7 +73,7 @@ fn inc_count(map: &mut HashMap<String, usize>, word: String) {
 }
 
 /// Train the program to identify words based on the corpus of passed-in data
-/// The data in the BufferedReader is read and counted
+/// Each word in the BufferedReader is counted for frequency
 fn train<R: Reader>(mut file: BufferedReader<R>) -> HashMap<String, usize> {
     let mut x: HashMap<String, usize> = HashMap::new();
 
@@ -96,7 +99,19 @@ fn split_word<'a>(word: &'a String) -> Vec<(&'a str, &'a str)> {
     splits
 }
 
-/// Given a split word, returns a HashMap containing all permutations of the
+#[cfg(test)]
+mod split_word_tests {
+    use super::split_word;
+
+    fn test_split_word() {
+        let expect = vec![("", "foo"), ("f", "oo"),
+            ("fo", "o"), ("foo", "")];
+        let input = String::from_str("foo");
+        assert_eq!(split_word(&input), expect);
+    }
+}
+
+/// Given a split word, returns a HashSet containing all permutations of the
 /// word resulting from the deletion of a single letter.
 fn deletions(splits: &Vec<(&str, &str)>) -> HashSet<String> {
     splits.iter().filter_map(|&(front, back)| {
@@ -107,7 +122,30 @@ fn deletions(splits: &Vec<(&str, &str)>) -> HashSet<String> {
     }).collect()
 }
 
-/// Given a split word, returns a HashMap containing all permutations of the
+#[cfg(test)]
+mod deletions_test {
+    use super::deletions;
+    use super::split_word;
+    use std::collections::HashSet;
+
+    #[test]
+    fn test_deletion() {
+        let mut expect = HashSet::new();
+        expect.insert(strr("ello"));
+        expect.insert(strr("hllo"));
+        expect.insert(strr("helo"));
+        expect.insert(strr("hell"));
+        let hello = strr("hello");
+        let input = split_word(&hello);
+        assert_eq!(deletions(&input), expect);
+    }
+
+    fn strr(string: &str) -> String {
+        String::from_str(string)
+    }
+}
+
+/// Given a split word, returns a HashSet containing all permutations of the
 /// word resulting from the transposition of two adjacent letters.
 fn transpositions(splits: &Vec<(&str, &str)>) -> HashSet<String> {
     splits.iter().filter_map(|&(front, back)| {
@@ -124,7 +162,7 @@ fn transpositions(splits: &Vec<(&str, &str)>) -> HashSet<String> {
     }).collect()
 }
 
-/// Given a split word, returns a HashMap containing all permutations of the
+/// Given a split word, returns a HashSet containing all permutations of the
 /// word resulting from inserting an additional letter at any position.
 fn insertions(splits: &Vec<(&str, &str)>) -> HashSet<String> {
     let mut results = HashSet::new();
@@ -138,6 +176,131 @@ fn insertions(splits: &Vec<(&str, &str)>) -> HashSet<String> {
     }
     results
 }
+
+#[cfg(test)]
+mod insertions_test {
+    use super::insertions;
+    use super::split_word;
+    use std::collections::HashSet;
+
+    #[test]
+    fn test_insertion() {
+        let mut expect = HashSet::new();
+        expect.insert(strr("afoo"));
+        expect.insert(strr("bfoo"));
+        expect.insert(strr("cfoo"));
+        expect.insert(strr("dfoo"));
+        expect.insert(strr("efoo"));
+        expect.insert(strr("ffoo"));
+        expect.insert(strr("gfoo"));
+        expect.insert(strr("hfoo"));
+        expect.insert(strr("ifoo"));
+        expect.insert(strr("jfoo"));
+        expect.insert(strr("kfoo"));
+        expect.insert(strr("lfoo"));
+        expect.insert(strr("mfoo"));
+        expect.insert(strr("nfoo"));
+        expect.insert(strr("ofoo"));
+        expect.insert(strr("pfoo"));
+        expect.insert(strr("qfoo"));
+        expect.insert(strr("rfoo"));
+        expect.insert(strr("sfoo"));
+        expect.insert(strr("tfoo"));
+        expect.insert(strr("ufoo"));
+        expect.insert(strr("vfoo"));
+        expect.insert(strr("wfoo"));
+        expect.insert(strr("xfoo"));
+        expect.insert(strr("yfoo"));
+        expect.insert(strr("zfoo"));
+        expect.insert(strr("faoo"));
+        expect.insert(strr("fboo"));
+        expect.insert(strr("fcoo"));
+        expect.insert(strr("fdoo"));
+        expect.insert(strr("feoo"));
+        expect.insert(strr("ffoo"));
+        expect.insert(strr("fgoo"));
+        expect.insert(strr("fhoo"));
+        expect.insert(strr("fioo"));
+        expect.insert(strr("fjoo"));
+        expect.insert(strr("fkoo"));
+        expect.insert(strr("floo"));
+        expect.insert(strr("fmoo"));
+        expect.insert(strr("fnoo"));
+        expect.insert(strr("fooo"));
+        expect.insert(strr("fpoo"));
+        expect.insert(strr("fqoo"));
+        expect.insert(strr("froo"));
+        expect.insert(strr("fsoo"));
+        expect.insert(strr("ftoo"));
+        expect.insert(strr("fuoo"));
+        expect.insert(strr("fvoo"));
+        expect.insert(strr("fwoo"));
+        expect.insert(strr("fxoo"));
+        expect.insert(strr("fyoo"));
+        expect.insert(strr("fzoo"));
+        expect.insert(strr("foao"));
+        expect.insert(strr("fobo"));
+        expect.insert(strr("foco"));
+        expect.insert(strr("fodo"));
+        expect.insert(strr("foeo"));
+        expect.insert(strr("fofo"));
+        expect.insert(strr("fogo"));
+        expect.insert(strr("foho"));
+        expect.insert(strr("foio"));
+        expect.insert(strr("fojo"));
+        expect.insert(strr("foko"));
+        expect.insert(strr("folo"));
+        expect.insert(strr("fomo"));
+        expect.insert(strr("fono"));
+        expect.insert(strr("fooo"));
+        expect.insert(strr("fopo"));
+        expect.insert(strr("foqo"));
+        expect.insert(strr("foro"));
+        expect.insert(strr("foso"));
+        expect.insert(strr("foto"));
+        expect.insert(strr("fouo"));
+        expect.insert(strr("fovo"));
+        expect.insert(strr("fowo"));
+        expect.insert(strr("foxo"));
+        expect.insert(strr("foyo"));
+        expect.insert(strr("fozo"));
+        expect.insert(strr("fooa"));
+        expect.insert(strr("foob"));
+        expect.insert(strr("fooc"));
+        expect.insert(strr("food"));
+        expect.insert(strr("fooe"));
+        expect.insert(strr("foof"));
+        expect.insert(strr("foog"));
+        expect.insert(strr("fooh"));
+        expect.insert(strr("fooi"));
+        expect.insert(strr("fooj"));
+        expect.insert(strr("fook"));
+        expect.insert(strr("fool"));
+        expect.insert(strr("foom"));
+        expect.insert(strr("foon"));
+        expect.insert(strr("fooo"));
+        expect.insert(strr("foop"));
+        expect.insert(strr("fooq"));
+        expect.insert(strr("foor"));
+        expect.insert(strr("foos"));
+        expect.insert(strr("foot"));
+        expect.insert(strr("foou"));
+        expect.insert(strr("foov"));
+        expect.insert(strr("foow"));
+        expect.insert(strr("foox"));
+        expect.insert(strr("fooy"));
+        expect.insert(strr("fooz"));
+        let foo = strr("foo");
+        let input = split_word(&foo);
+        assert_eq!(insertions(&input).len(), expect.len());
+        assert_eq!(insertions(&input), expect);
+    }
+
+    fn strr(string: &str) -> String {
+        String::from_str(string)
+    }
+}
+
 
 /// Given a split word, returns a HashMap containing all permutations of the
 /// word resulting from replacing a letter at any position.
@@ -156,8 +319,8 @@ fn replacements(splits: &Vec<(&str, &str)>) -> HashSet<String> {
     results
 }
 
-/// Given a set of words, returns a HashMap containing only words that are in
-/// the dictionary. If no words are valid, returns an empty HashMap.
+/// Given a set of words, returns a HashSet containing only words that are in
+/// the dictionary. If no words are valid, returns an empty HashSet.
 fn known(words: &HashSet<String>, dict: &HashMap<String, usize>) -> HashSet<String> {
     let mut recognized = HashSet::new();
     for word in words.iter() {
@@ -203,6 +366,8 @@ fn edits_2(edit_1_set: &HashSet<String>, dict: &HashMap<String, usize>) -> HashS
 /// best replacement;
 /// None if the word is not misspelled.
 fn correct(word: String, dict: &HashMap<String, usize>) -> Option<String> {
+
+    // Find out if the word is spelled correctly or if there are no suggestions
     let mut corrected_set: HashSet<String> = HashSet::new();
     let mut word_set = HashSet::new();
     word_set.insert(word.clone());
@@ -223,6 +388,7 @@ fn correct(word: String, dict: &HashMap<String, usize>) -> Option<String> {
         return None;
     }
 
+    // If there are better spelling suggestions, pick the best one
     let mut max_freq: usize = 0;
     let mut best_word = String::new();
     for possibility in corrected_set.into_iter() {
