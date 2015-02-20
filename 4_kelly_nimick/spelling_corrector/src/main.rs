@@ -55,7 +55,7 @@ fn main() {
     let mut stdin: BufferedReader<StdinReader> = BufferedReader::new(io::stdin());
     for maybe_word in stdin.lines() {
         let word = maybe_word.ok().unwrap();
-        match correct(word.clone(), &dictionary) {
+        match suggest(word.clone(), &dictionary) {
             Some(correction) => println!("{}, {}", word.trim(), correction),
             None             => println!("{}, {}", word.trim(), word.trim())
         }
@@ -694,33 +694,29 @@ mod edits_2_test {
 }
 
 /// Given a word and a dictionary, returns an option:
-/// Some(String) if the word is misspelled, with the String indicating the
-/// best replacement;
+/// Some(HashSet) if the word is misspelled, with the HashSet
+/// giving possible suggestions from edit distance 1 or 2.
 /// None if the word is not misspelled.
-fn correct(word: String, dict: &HashMap<String, usize>) -> Option<String> {
-
-    // Find out if the word is spelled correctly or if there are no suggestions
-    let mut corrected_set: HashSet<String>;
+fn get_suggestion_set(word: String, dict: &HashMap<String, usize>) -> Option<HashSet<String>> {
     let mut word_set = HashSet::new();
     word_set.insert(word.clone());
     let no_change = known(&word_set, dict);
-    if no_change.is_empty() {
-        let one = edits_1(&word);
-        let one_known = known(&one, dict);
-        if one_known.is_empty() {
-            let two_known = edits_2(&one, dict);
-            if two_known.is_empty() {
-                return Some(String::from_str(NO_SPELLING_SUGGESTION));
-            }
-            corrected_set = two_known;
-        } else {
-            corrected_set = one_known;
-        }
-    } else {
-        return None;
+    if !no_change.is_empty() {
+        return None
     }
+    let one = edits_1(&word);
+    let one_known = known(&one, dict);
+    Some(if !one_known.is_empty() {
+        one_known
+    } else {
+        edits_2(&one, dict)
+    })
+}
 
-    // If there are better spelling suggestions, pick the best one
+/// Given a non-empty HashMap and a dictionary,
+/// returns the String that represents the best spelling suggestion.
+fn get_best_suggestion(corrected_set: HashSet<String>,
+                       dict: &HashMap<String, usize>) -> String {
     let mut max_freq: usize = 0;
     let mut best_word = String::new();
     for possibility in corrected_set.into_iter() {
@@ -734,15 +730,34 @@ fn correct(word: String, dict: &HashMap<String, usize>) -> Option<String> {
             None => {}
         }
     }
-    Some(best_word)
+    best_word
+}
+
+
+
+/// Given a word and a dictionary, returns an option:
+/// Some(String) if the word is misspelled, with the String indicating the
+/// best replacement;
+/// None if the word is not misspelled.
+fn suggest(word: String, dict: &HashMap<String, usize>) -> Option<String> {
+    let mut corrected_set: HashSet<String>;
+    match get_suggestion_set(word, dict) {
+        Some(set) => { corrected_set = set},
+        None => { return None; }
+    };
+
+    if corrected_set.is_empty() {
+        return Some(String::from_str(NO_SPELLING_SUGGESTION));
+    }
+    Some(get_best_suggestion(corrected_set, dict))
 }
 
 #[cfg(test)]
-mod correct_test {
-    use super::{open_file, train, correct};
+mod suggest_test {
+    use super::{open_file, train, suggest};
 
     #[test]
-    fn test_correct() {
+    fn test_suggest() {
         let file = open_file("train.txt");
         let dict = train(file);
 
@@ -750,7 +765,7 @@ mod correct_test {
         let wrongs = vec!["realy", "accomplishher", "spelingg", "correcttio", "wharrgarbl"];
 
         for (right, wrong) in rights.iter().zip(wrongs.iter()) {
-            let w = correct(String::from_str(*wrong), &dict).unwrap();
+            let w = suggest(String::from_str(*wrong), &dict).unwrap();
             assert_eq!(String::from_str(*right), w);
         }
 
