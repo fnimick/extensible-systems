@@ -32,7 +32,7 @@ static ALPHABET: &'static str = "abcdefghijklmnopqrstuvwxyz";
     Words input on standard input will be followed by an output
     in the following format:
 
-    <word>
+    <word>, <word>
         - If the word is spelled correctly
     <word>, -
         - If the word is spelled incorrectly, but there are no suggestions
@@ -57,7 +57,7 @@ fn main() {
         let word = maybe_word.ok().unwrap();
         match correct(word.clone(), &dictionary) {
             Some(correction) => println!("{}, {}", word, correction),
-            None             => println!("{}", word)
+            None             => println!("{}, {}", word, word)
         }
     }
 }
