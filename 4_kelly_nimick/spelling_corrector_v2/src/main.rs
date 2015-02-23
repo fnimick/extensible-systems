@@ -330,33 +330,20 @@ mod insertions_test {
 
     #[test]
     fn test_insertion() {
-        let expect = string_set!["afoo", "bfoo",
-                "cfoo", "dfoo", "efoo", "ffoo",
-                "gfoo", "hfoo", "ifoo", "jfoo",
-                "kfoo", "lfoo", "mfoo", "nfoo",
-                "ofoo", "pfoo", "qfoo", "rfoo",
-                "sfoo", "tfoo", "ufoo", "vfoo",
-                "wfoo", "xfoo", "yfoo", "zfoo",
-                "faoo", "fboo", "fcoo", "fdoo",
-                "feoo", "ffoo", "fgoo", "fhoo",
-                "fioo", "fjoo", "fkoo", "floo",
-                "fmoo", "fnoo", "fooo", "fpoo",
-                "fqoo", "froo", "fsoo", "ftoo",
-                "fuoo", "fvoo", "fwoo", "fxoo",
-                "fyoo", "fzoo", "foao", "fobo",
-                "foco", "fodo", "foeo", "fofo",
-                "fogo", "foho", "foio", "fojo",
-                "foko", "folo", "fomo", "fono",
-                "fooo", "fopo", "foqo", "foro",
-                "foso", "foto", "fouo", "fovo",
-                "fowo", "foxo", "foyo", "fozo",
-                "fooa", "foob", "fooc", "food",
-                "fooe", "foof", "foog", "fooh",
-                "fooi", "fooj", "fook", "fool",
-                "foom", "foon", "fooo", "foop",
-                "fooq", "foor", "foos", "foot",
-                "foou", "foov", "foow", "foox",
-                "fooy", "fooz"];
+        let expect = string_set!["afoo", "bfoo", "cfoo", "dfoo", "efoo", "ffoo",
+                 "gfoo", "hfoo", "ifoo", "jfoo", "kfoo", "lfoo", "mfoo", "nfoo",
+                 "ofoo", "pfoo", "qfoo", "rfoo", "sfoo", "tfoo", "ufoo", "vfoo",
+                 "wfoo", "xfoo", "yfoo", "zfoo", "faoo", "fboo", "fcoo", "fdoo",
+                 "feoo", "ffoo", "fgoo", "fhoo", "fioo", "fjoo", "fkoo", "floo",
+                 "fmoo", "fnoo", "fooo", "fpoo", "fqoo", "froo", "fsoo", "ftoo",
+                 "fuoo", "fvoo", "fwoo", "fxoo", "fyoo", "fzoo", "foao", "fobo",
+                 "foco", "fodo", "foeo", "fofo", "fogo", "foho", "foio", "fojo",
+                 "foko", "folo", "fomo", "fono", "fooo", "fopo", "foqo", "foro",
+                 "foso", "foto", "fouo", "fovo", "fowo", "foxo", "foyo", "fozo",
+                 "fooa", "foob", "fooc", "food", "fooe", "foof", "foog", "fooh",
+                 "fooi", "fooj", "fook", "fool", "foom", "foon", "fooo", "foop",
+                 "fooq", "foor", "foos", "foot", "foou", "foov", "foow", "foox",
+                 "fooy", "fooz"];
         let foo = String::from_str("foo");
         let input = split_word(&foo);
         let output = insertions(&input);
@@ -390,20 +377,15 @@ mod replacements_test {
 
     #[test]
     fn test_replacements() {
-        let expect = string_set!["aoo", "boo", "coo",
-            "doo", "eoo", "foo", "goo", "hoo", "ioo",
-            "joo", "koo", "loo", "moo", "noo", "ooo",
-            "poo", "qoo", "roo", "soo", "too", "uoo",
-            "voo", "woo", "xoo", "yoo", "zoo", "fao",
-            "fbo", "fco", "fdo", "feo", "ffo", "fgo",
-            "fho", "fio", "fjo", "fko", "flo", "fmo",
-            "fno", "foo", "fpo", "fqo", "fro", "fto",
-            "fso", "fuo", "fvo", "fwo", "fxo", "fyo",
-            "fzo", "foa", "fob", "foc", "fod", "foe",
-            "fof", "fog", "foh", "foi", "foj", "fok",
-            "fol", "fom", "fon", "foo", "fop", "foq",
-            "for", "fos", "fot", "fou", "fov", "fow",
-            "fox", "foy", "foz"];
+        let expect = string_set!["aoo", "boo", "coo", "doo", "eoo", "foo",
+            "goo", "hoo", "ioo", "joo", "koo", "loo", "moo", "noo", "ooo",
+            "poo", "qoo", "roo", "soo", "too", "uoo", "voo", "woo", "xoo",
+            "yoo", "zoo", "fao", "fbo", "fco", "fdo", "feo", "ffo", "fgo",
+            "fho", "fio", "fjo", "fko", "flo", "fmo", "fno", "foo", "fpo",
+            "fqo", "fro", "fto", "fso", "fuo", "fvo", "fwo", "fxo", "fyo",
+            "fzo", "foa", "fob", "foc", "fod", "foe", "fof", "fog", "foh",
+            "foi", "foj", "fok", "fol", "fom", "fon", "foo", "fop", "foq",
+            "for", "fos", "fot", "fou", "fov", "fow", "fox", "foy", "foz"];
         let foo = String::from_str("foo");
         let input = split_word(&foo);
         let output = replacements(&input);
