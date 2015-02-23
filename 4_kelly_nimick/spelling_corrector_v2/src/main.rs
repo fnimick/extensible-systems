@@ -323,8 +323,7 @@ fn insertions(splits: &Vec<(&str, &str)>) -> HashSet<String> {
 
 #[cfg(test)]
 mod insertions_test {
-    use super::insertions;
-    use super::split_word;
+    use super::{split_word, insertions};
     use std::collections::HashSet;
 
     #[test]
@@ -370,8 +369,7 @@ fn replacements(splits: &Vec<(&str, &str)>) -> HashSet<String> {
 
 #[cfg(test)]
 mod replacements_test {
-    use super::replacements;
-    use super::split_word;
+    use super::{split_word, replacements};
     use std::collections::HashSet;
 
     #[test]
