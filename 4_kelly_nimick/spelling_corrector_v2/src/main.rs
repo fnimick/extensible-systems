@@ -137,8 +137,7 @@ mod trim_to_word_tests {
 }
 
 /// Given a word and a reference to a HashMap of words to frequencies (usize),
-/// converts the word to lower case and increments its associated frequency
-/// in the map.
+/// increments its associated frequency in the map.
 /// If the word is not present, it is added to the map with frequency 1.
 fn inc_count(map: &mut HashMap<String, usize>, word: String) {
     match map.entry(word) {
@@ -324,8 +323,7 @@ fn insertions(splits: &Vec<(&str, &str)>) -> HashSet<String> {
 
 #[cfg(test)]
 mod insertions_test {
-    use super::insertions;
-    use super::split_word;
+    use super::{split_word, insertions};
     use std::collections::HashSet;
 
     #[test]
@@ -371,8 +369,7 @@ fn replacements(splits: &Vec<(&str, &str)>) -> HashSet<String> {
 
 #[cfg(test)]
 mod replacements_test {
-    use super::replacements;
-    use super::split_word;
+    use super::{split_word, replacements};
     use std::collections::HashSet;
 
     #[test]
