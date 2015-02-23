@@ -42,8 +42,7 @@ static ALPHABET: &'static str = "abcdefghijklmnopqrstuvwxyz";
 "]
 #[cfg(not(test))]
 fn main() {
-    use std::os;
-    use std::io;
+    use std::{io, os};
     use std::io::stdio::StdinReader;
 
     let args = os::args();
