@@ -78,6 +78,20 @@ macro_rules! string_hash {
     }};
 }
 
+#[doc="
+    Use: string_set![&str, ... ]
+    The &str will be converted into a String value
+"]
+macro_rules! string_set {
+    ( $( $x:expr ),* ) => {{
+        let mut temp_set = HashSet::new();
+        $(
+            temp_set.insert(String::from_str($x));
+        )*
+        temp_set
+    }};
+}
+
 /// Open the file as given by filename in the form of a Buffered Reader
 fn open_file(filename: &str) -> BufferedReader<File> {
     let file = File::open(&Path::new(filename));
@@ -166,6 +180,48 @@ fn train<R: Reader>(mut file: BufferedReader<R>) -> HashMap<String, usize> {
     x
 }
 
+#[cfg(test)]
+mod train_test {
+    use super::train;
+    use std::io::{MemReader, BufferedReader};
+    use std::collections::HashMap;
+
+    #[test]
+    fn test_train() {
+        let input = concat!("Hello, World! My name is Frank Underwood.\n",
+                            "You may know me as the current president of ",
+                            "the United States of America. But I assure ",
+                            "you, I am not your typical president. Competence",
+                            " is such\n a rare bird in these woods, that I ",
+                            "always appreciate it when I see it. You seem ",
+                            "bright - maybe there is hope for you after all.");
+
+        let expected = string_hash![("hello", 1), ("world", 1), ("my", 1),
+                                    ("name", 1), ("is", 3), ("frank", 1),
+                                    ("underwood", 1), ("you", 4), ("may", 1),
+                                    ("know", 1), ("me", 1), ("as", 1),
+                                    ("the", 2), ("current", 1), ("president", 2),
+                                    ("of", 2), ("united", 1), ("states", 1),
+                                    ("america", 1), ("but", 1), ("i", 4),
+                                    ("assure", 1), ("am", 1), ("not", 1),
+                                    ("your", 1), ("typical", 1), ("competence", 1),
+                                    ("such", 1), ("a", 1), ("rare", 1),
+                                    ("bird", 1), ("in", 1), ("these", 1),
+                                    ("woods", 1), ("that", 1), ("always", 1),
+                                    ("appreciate", 1), ("it", 2), ("when", 1),
+                                    ("see", 1), ("seem", 1), ("bright", 1),
+                                    ("maybe", 1), ("there", 1), ("hope", 1),
+                                    ("for", 1), ("after", 1), ("all", 1)];
+        run_test(input, expected);
+    }
+
+    fn run_test(input: &str, expected: HashMap<String, usize>) {
+        let bytes = input.to_string().into_bytes();
+        let r: BufferedReader<MemReader> =
+            BufferedReader::new(MemReader::new(bytes));
+        assert_eq!(train(r), expected);
+    }
+}
 
 /// Given a word, returns a vector containing slices of the word from
 /// (0-i, i-<end of word>) for every i from 0 to the word's length.
@@ -210,18 +266,10 @@ mod deletions_test {
 
     #[test]
     fn test_deletion() {
-        let mut expect = HashSet::new();
-        expect.insert(strr("ello"));
-        expect.insert(strr("hllo"));
-        expect.insert(strr("helo"));
-        expect.insert(strr("hell"));
-        let hello = strr("hello");
+        let expect = string_set!["ello", "hllo", "helo", "hell"];
+        let hello = String::from_str("hello");
         let input = split_word(&hello);
         assert_eq!(deletions(&input), expect);
-    }
-
-    fn strr(string: &str) -> String {
-        String::from_str(string)
     }
 }
 
@@ -250,18 +298,12 @@ mod transpositions_test {
 
     #[test]
     fn test_transpositions() {
-        let mut expect = HashSet::new();
-        expect.insert(strr("foo"));
-        expect.insert(strr("ofo"));
-        let foo = strr("foo");
+        let expect = string_set!["foo", "ofo"];
+        let foo = String::from_str("foo");
         let input = split_word(&foo);
         let output = transpositions(&input);
         assert_eq!(output.len(), expect.len());
         assert_eq!(output, expect);
-    }
-
-    fn strr(string: &str) -> String {
-        String::from_str(string)
     }
 }
 
@@ -288,120 +330,38 @@ mod insertions_test {
 
     #[test]
     fn test_insertion() {
-        let mut expect = HashSet::new();
-        expect.insert(strr("afoo"));
-        expect.insert(strr("bfoo"));
-        expect.insert(strr("cfoo"));
-        expect.insert(strr("dfoo"));
-        expect.insert(strr("efoo"));
-        expect.insert(strr("ffoo"));
-        expect.insert(strr("gfoo"));
-        expect.insert(strr("hfoo"));
-        expect.insert(strr("ifoo"));
-        expect.insert(strr("jfoo"));
-        expect.insert(strr("kfoo"));
-        expect.insert(strr("lfoo"));
-        expect.insert(strr("mfoo"));
-        expect.insert(strr("nfoo"));
-        expect.insert(strr("ofoo"));
-        expect.insert(strr("pfoo"));
-        expect.insert(strr("qfoo"));
-        expect.insert(strr("rfoo"));
-        expect.insert(strr("sfoo"));
-        expect.insert(strr("tfoo"));
-        expect.insert(strr("ufoo"));
-        expect.insert(strr("vfoo"));
-        expect.insert(strr("wfoo"));
-        expect.insert(strr("xfoo"));
-        expect.insert(strr("yfoo"));
-        expect.insert(strr("zfoo"));
-        expect.insert(strr("faoo"));
-        expect.insert(strr("fboo"));
-        expect.insert(strr("fcoo"));
-        expect.insert(strr("fdoo"));
-        expect.insert(strr("feoo"));
-        expect.insert(strr("ffoo"));
-        expect.insert(strr("fgoo"));
-        expect.insert(strr("fhoo"));
-        expect.insert(strr("fioo"));
-        expect.insert(strr("fjoo"));
-        expect.insert(strr("fkoo"));
-        expect.insert(strr("floo"));
-        expect.insert(strr("fmoo"));
-        expect.insert(strr("fnoo"));
-        expect.insert(strr("fooo"));
-        expect.insert(strr("fpoo"));
-        expect.insert(strr("fqoo"));
-        expect.insert(strr("froo"));
-        expect.insert(strr("fsoo"));
-        expect.insert(strr("ftoo"));
-        expect.insert(strr("fuoo"));
-        expect.insert(strr("fvoo"));
-        expect.insert(strr("fwoo"));
-        expect.insert(strr("fxoo"));
-        expect.insert(strr("fyoo"));
-        expect.insert(strr("fzoo"));
-        expect.insert(strr("foao"));
-        expect.insert(strr("fobo"));
-        expect.insert(strr("foco"));
-        expect.insert(strr("fodo"));
-        expect.insert(strr("foeo"));
-        expect.insert(strr("fofo"));
-        expect.insert(strr("fogo"));
-        expect.insert(strr("foho"));
-        expect.insert(strr("foio"));
-        expect.insert(strr("fojo"));
-        expect.insert(strr("foko"));
-        expect.insert(strr("folo"));
-        expect.insert(strr("fomo"));
-        expect.insert(strr("fono"));
-        expect.insert(strr("fooo"));
-        expect.insert(strr("fopo"));
-        expect.insert(strr("foqo"));
-        expect.insert(strr("foro"));
-        expect.insert(strr("foso"));
-        expect.insert(strr("foto"));
-        expect.insert(strr("fouo"));
-        expect.insert(strr("fovo"));
-        expect.insert(strr("fowo"));
-        expect.insert(strr("foxo"));
-        expect.insert(strr("foyo"));
-        expect.insert(strr("fozo"));
-        expect.insert(strr("fooa"));
-        expect.insert(strr("foob"));
-        expect.insert(strr("fooc"));
-        expect.insert(strr("food"));
-        expect.insert(strr("fooe"));
-        expect.insert(strr("foof"));
-        expect.insert(strr("foog"));
-        expect.insert(strr("fooh"));
-        expect.insert(strr("fooi"));
-        expect.insert(strr("fooj"));
-        expect.insert(strr("fook"));
-        expect.insert(strr("fool"));
-        expect.insert(strr("foom"));
-        expect.insert(strr("foon"));
-        expect.insert(strr("fooo"));
-        expect.insert(strr("foop"));
-        expect.insert(strr("fooq"));
-        expect.insert(strr("foor"));
-        expect.insert(strr("foos"));
-        expect.insert(strr("foot"));
-        expect.insert(strr("foou"));
-        expect.insert(strr("foov"));
-        expect.insert(strr("foow"));
-        expect.insert(strr("foox"));
-        expect.insert(strr("fooy"));
-        expect.insert(strr("fooz"));
-        let foo = strr("foo");
+        let expect = string_set!["afoo", "bfoo",
+                "cfoo", "dfoo", "efoo", "ffoo",
+                "gfoo", "hfoo", "ifoo", "jfoo",
+                "kfoo", "lfoo", "mfoo", "nfoo",
+                "ofoo", "pfoo", "qfoo", "rfoo",
+                "sfoo", "tfoo", "ufoo", "vfoo",
+                "wfoo", "xfoo", "yfoo", "zfoo",
+                "faoo", "fboo", "fcoo", "fdoo",
+                "feoo", "ffoo", "fgoo", "fhoo",
+                "fioo", "fjoo", "fkoo", "floo",
+                "fmoo", "fnoo", "fooo", "fpoo",
+                "fqoo", "froo", "fsoo", "ftoo",
+                "fuoo", "fvoo", "fwoo", "fxoo",
+                "fyoo", "fzoo", "foao", "fobo",
+                "foco", "fodo", "foeo", "fofo",
+                "fogo", "foho", "foio", "fojo",
+                "foko", "folo", "fomo", "fono",
+                "fooo", "fopo", "foqo", "foro",
+                "foso", "foto", "fouo", "fovo",
+                "fowo", "foxo", "foyo", "fozo",
+                "fooa", "foob", "fooc", "food",
+                "fooe", "foof", "foog", "fooh",
+                "fooi", "fooj", "fook", "fool",
+                "foom", "foon", "fooo", "foop",
+                "fooq", "foor", "foos", "foot",
+                "foou", "foov", "foow", "foox",
+                "fooy", "fooz"];
+        let foo = String::from_str("foo");
         let input = split_word(&foo);
         let output = insertions(&input);
         assert_eq!(output.len(), expect.len());
         assert_eq!(output, expect);
-    }
-
-    fn strr(string: &str) -> String {
-        String::from_str(string)
     }
 }
 
@@ -430,94 +390,25 @@ mod replacements_test {
 
     #[test]
     fn test_replacements() {
-        let mut expect = HashSet::new();
-        expect.insert(strr("aoo"));
-        expect.insert(strr("boo"));
-        expect.insert(strr("coo"));
-        expect.insert(strr("doo"));
-        expect.insert(strr("eoo"));
-        expect.insert(strr("foo"));
-        expect.insert(strr("goo"));
-        expect.insert(strr("hoo"));
-        expect.insert(strr("ioo"));
-        expect.insert(strr("joo"));
-        expect.insert(strr("koo"));
-        expect.insert(strr("loo"));
-        expect.insert(strr("moo"));
-        expect.insert(strr("noo"));
-        expect.insert(strr("ooo"));
-        expect.insert(strr("poo"));
-        expect.insert(strr("qoo"));
-        expect.insert(strr("roo"));
-        expect.insert(strr("soo"));
-        expect.insert(strr("too"));
-        expect.insert(strr("uoo"));
-        expect.insert(strr("voo"));
-        expect.insert(strr("woo"));
-        expect.insert(strr("xoo"));
-        expect.insert(strr("yoo"));
-        expect.insert(strr("zoo"));
-        expect.insert(strr("fao"));
-        expect.insert(strr("fbo"));
-        expect.insert(strr("fco"));
-        expect.insert(strr("fdo"));
-        expect.insert(strr("feo"));
-        expect.insert(strr("ffo"));
-        expect.insert(strr("fgo"));
-        expect.insert(strr("fho"));
-        expect.insert(strr("fio"));
-        expect.insert(strr("fjo"));
-        expect.insert(strr("fko"));
-        expect.insert(strr("flo"));
-        expect.insert(strr("fmo"));
-        expect.insert(strr("fno"));
-        expect.insert(strr("foo"));
-        expect.insert(strr("fpo"));
-        expect.insert(strr("fqo"));
-        expect.insert(strr("fro"));
-        expect.insert(strr("fso"));
-        expect.insert(strr("fto"));
-        expect.insert(strr("fuo"));
-        expect.insert(strr("fvo"));
-        expect.insert(strr("fwo"));
-        expect.insert(strr("fxo"));
-        expect.insert(strr("fyo"));
-        expect.insert(strr("fzo"));
-        expect.insert(strr("foa"));
-        expect.insert(strr("fob"));
-        expect.insert(strr("foc"));
-        expect.insert(strr("fod"));
-        expect.insert(strr("foe"));
-        expect.insert(strr("fof"));
-        expect.insert(strr("fog"));
-        expect.insert(strr("foh"));
-        expect.insert(strr("foi"));
-        expect.insert(strr("foj"));
-        expect.insert(strr("fok"));
-        expect.insert(strr("fol"));
-        expect.insert(strr("fom"));
-        expect.insert(strr("fon"));
-        expect.insert(strr("foo"));
-        expect.insert(strr("fop"));
-        expect.insert(strr("foq"));
-        expect.insert(strr("for"));
-        expect.insert(strr("fos"));
-        expect.insert(strr("fot"));
-        expect.insert(strr("fou"));
-        expect.insert(strr("fov"));
-        expect.insert(strr("fow"));
-        expect.insert(strr("fox"));
-        expect.insert(strr("foy"));
-        expect.insert(strr("foz"));
-        let foo = strr("foo");
+        let expect = string_set!["aoo", "boo", "coo",
+            "doo", "eoo", "foo", "goo", "hoo", "ioo",
+            "joo", "koo", "loo", "moo", "noo", "ooo",
+            "poo", "qoo", "roo", "soo", "too", "uoo",
+            "voo", "woo", "xoo", "yoo", "zoo", "fao",
+            "fbo", "fco", "fdo", "feo", "ffo", "fgo",
+            "fho", "fio", "fjo", "fko", "flo", "fmo",
+            "fno", "foo", "fpo", "fqo", "fro", "fto",
+            "fso", "fuo", "fvo", "fwo", "fxo", "fyo",
+            "fzo", "foa", "fob", "foc", "fod", "foe",
+            "fof", "fog", "foh", "foi", "foj", "fok",
+            "fol", "fom", "fon", "foo", "fop", "foq",
+            "for", "fos", "fot", "fou", "fov", "fow",
+            "fox", "foy", "foz"];
+        let foo = String::from_str("foo");
         let input = split_word(&foo);
         let output = replacements(&input);
         assert_eq!(output.len(), expect.len());
         assert_eq!(output, expect);
-    }
-
-    fn strr(string: &str) -> String {
-        String::from_str(string)
     }
 }
 
@@ -540,19 +431,10 @@ mod known_test {
 
     #[test]
     fn test_known() {
-        let mut dict = HashMap::new();
-        dict.insert(strr("hello"), 2);
-        dict.insert(strr("world"), 1);
-        let mut words = HashSet::new();
-        words.insert(strr("hello"));
-        words.insert(strr("word"));
-        let mut expected = HashSet::new();
-        expected.insert(strr("hello"));
+        let dict = string_hash![("hello", 2), ("world", 1)];
+        let words = string_set!["hello", "word"];
+        let expected = string_set!["hello"];
         assert_eq!(known(&words, &dict), expected);
-    }
-
-    fn strr(string: &str) -> String {
-        String::from_str(string)
     }
 }
 
@@ -576,7 +458,7 @@ mod edits_1_test {
 
     #[test]
     fn test_edits_1() {
-        let foo = strr("foo");
+        let foo = String::from_str("foo");
         let word = split_word(&foo);
         let mut expect = HashSet::new();
         expect.extend(deletions(&word).into_iter());
@@ -586,10 +468,6 @@ mod edits_1_test {
         let output = edits_1(&foo);
         assert_eq!(output.len(), expect.len());
         assert_eq!(output, expect);
-    }
-
-    fn strr(string: &str) -> String {
-        String::from_str(string)
     }
 }
 
@@ -611,23 +489,11 @@ mod edits_2_test {
 
     #[test]
     fn test_edits_2() {
-        let mut edit_1_set = HashSet::new();
-        edit_1_set.insert(strr("foo"));
-        let mut dict = HashMap::new();
-        dict.insert(strr("of"), 5);
-        dict.insert(strr("food"), 3);
-        dict.insert(strr("coo"), 1);
-        dict.insert(strr("roof"), 2);
-        dict.insert(strr("bar"), 1);
-        dict.insert(strr("bard"), 1);
-        let mut expect = HashSet::new();
-        expect.insert(strr("food"));
-        expect.insert(strr("coo"));
+        let edit_1_set = string_set!["foo"];
+        let dict = string_hash![("of", 5), ("food", 3), ("coo", 1),
+                                ("roof", 2), ("bar", 1), ("bard", 1)];
+        let expect = string_set!["food", "coo"];
         assert_eq!(edits_2(&edit_1_set, &dict), expect);
-    }
-
-    fn strr(string: &str) -> String {
-        String::from_str(string)
     }
 }
 
@@ -658,21 +524,12 @@ mod get_suggestion_set_test {
 
     #[test]
     fn test_get_suggestion_set() {
-        let mut dict = HashMap::new();
-        dict.insert(strr("food"), 1);
-        dict.insert(strr("room"), 1);
-        let mut expected1 = HashSet::new();
-        expected1.insert(strr("food"));
-        let mut expected2 = HashSet::new();
-        expected2.insert(strr("food"));
-        expected2.insert(strr("room"));
-        assert_eq!(get_suggestion_set(strr("fo"), &dict), Some(expected1));
-        assert_eq!(get_suggestion_set(strr("oo"), &dict), Some(expected2));
-        assert_eq!(get_suggestion_set(strr("food"), &dict), None);
-    }
-
-    fn strr(string: &str) -> String {
-        String::from_str(string)
+        let dict = string_hash![("food", 1), ("room", 1)];
+        let expected1 = string_set!["food"];
+        let expected2 = string_set!["food", "room"];
+        assert_eq!(get_suggestion_set(String::from_str("fo"), &dict), Some(expected1));
+        assert_eq!(get_suggestion_set(String::from_str("oo"), &dict), Some(expected2));
+        assert_eq!(get_suggestion_set(String::from_str("food"), &dict), None);
     }
 }
 
@@ -703,19 +560,10 @@ mod get_best_suggestion_test {
 
     #[test]
     fn test_get_best_suggestion() {
-        let mut dict = HashMap::new();
-        dict.insert(strr("hello"), 3);
-        dict.insert(strr("hell"), 2);
-        dict.insert(strr("jello"), 1);
-        let mut suggestions = HashSet::new();
-        suggestions.insert(strr("hello"));
-        suggestions.insert(strr("hell"));
-        suggestions.insert(strr("jello"));
-        assert_eq!(get_best_suggestion(suggestions, &dict), strr("hello"));
-    }
-
-    fn strr(string: &str) -> String {
-        String::from_str(string)
+        let dict = string_hash![("hello", 3), ("hell", 2), ("jello", 1)];
+        let suggestions = string_set!["hello", "hell", "jello"];
+        assert_eq!(get_best_suggestion(suggestions, &dict),
+            String::from_str("hello"));
     }
 }
 
@@ -753,49 +601,6 @@ mod suggest_test {
             assert_eq!(String::from_str(*right), w);
         }
 
-    }
-}
-
-#[cfg(test)]
-mod train_test {
-    use super::train;
-    use std::io::{MemReader, BufferedReader};
-    use std::collections::HashMap;
-
-    #[test]
-    fn test_train() {
-        let input = concat!("Hello, World! My name is Frank Underwood.\n",
-                            "You may know me as the current president of ",
-                            "the United States of America. But I assure ",
-                            "you, I am not your typical president. Competence",
-                            " is such\n a rare bird in these woods, that I ",
-                            "always appreciate it when I see it. You seem ",
-                            "bright - maybe there is hope for you after all.");
-
-        let expected = string_hash![("hello", 1), ("world", 1), ("my", 1),
-                                    ("name", 1), ("is", 3), ("frank", 1),
-                                    ("underwood", 1), ("you", 4), ("may", 1),
-                                    ("know", 1), ("me", 1), ("as", 1),
-                                    ("the", 2), ("current", 1), ("president", 2),
-                                    ("of", 2), ("united", 1), ("states", 1),
-                                    ("america", 1), ("but", 1), ("i", 4),
-                                    ("assure", 1), ("am", 1), ("not", 1),
-                                    ("your", 1), ("typical", 1), ("competence", 1),
-                                    ("such", 1), ("a", 1), ("rare", 1),
-                                    ("bird", 1), ("in", 1), ("these", 1),
-                                    ("woods", 1), ("that", 1), ("always", 1),
-                                    ("appreciate", 1), ("it", 2), ("when", 1),
-                                    ("see", 1), ("seem", 1), ("bright", 1),
-                                    ("maybe", 1), ("there", 1), ("hope", 1),
-                                    ("for", 1), ("after", 1), ("all", 1)];
-        run_test(input, expected);
-    }
-
-    fn run_test(input: &str, expected: HashMap<String, usize>) {
-        let bytes = input.to_string().into_bytes();
-        let r: BufferedReader<MemReader> =
-            BufferedReader::new(MemReader::new(bytes));
-        assert_eq!(train(r), expected);
     }
 }
 
