@@ -259,8 +259,7 @@ fn deletions(splits: &Vec<(&str, &str)>) -> HashSet<String> {
 
 #[cfg(test)]
 mod deletions_test {
-    use super::deletions;
-    use super::split_word;
+    use super::{deletions, split_word};
     use std::collections::HashSet;
 
     #[test]
@@ -291,8 +290,7 @@ fn transpositions(splits: &Vec<(&str, &str)>) -> HashSet<String> {
 
 #[cfg(test)]
 mod transpositions_test {
-    use super::transpositions;
-    use super::split_word;
+    use super::{split_word, transpositions};
     use std::collections::HashSet;
 
     #[test]
