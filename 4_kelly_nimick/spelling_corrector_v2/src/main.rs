@@ -65,7 +65,7 @@ fn main() {
 }
 
 #[doc="
-    Use: string_hash![(&str, value) ... ]
+    Use: string_hash![(&str, value), ... ]
     The &str will be converted into a String value
 "]
 macro_rules! string_hash {
