@@ -18,7 +18,6 @@ Assumptions: The training file has no misspelled words
 
 extern crate regex;
 
-use regex::Regex;
 use std::ascii::AsciiExt;
 use std::collections::{HashSet, HashMap};
 use std::io::{File, BufferedReader};
@@ -101,6 +100,7 @@ fn open_file(filename: &str) -> BufferedReader<File> {
 /// Remove any preceeding or trailing non a-z or A-Z characters,
 /// and return the lowercase version of the word
 fn trim_to_word(word: &str) -> Option<String> {
+    use regex::Regex;
     let regex = Regex::new("[a-zA-Z]+");
     let re = match regex {
         Ok(re)    => re,
