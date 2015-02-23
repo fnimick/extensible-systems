@@ -20,6 +20,7 @@ extern crate regex;
 
 use std::ascii::AsciiExt;
 use std::collections::{HashSet, HashMap};
+use std::collections::hash_map::Entry::{Vacant, Occupied};
 use std::io::{File, BufferedReader};
 use std::iter::IteratorExt;
 
@@ -140,11 +141,10 @@ mod trim_to_word_tests {
 /// in the map.
 /// If the word is not present, it is added to the map with frequency 1.
 fn inc_count(map: &mut HashMap<String, usize>, word: String) {
-    match map.get_mut(&word) {
-        Some(count) => {*count += 1; return;},
-        None => {},
+    match map.entry(word) {
+        Vacant(e) => { e.insert(1); },
+        Occupied(mut e) => { *e.get_mut() += 1; }
     }
-    map.insert(word, 1);
 }
 
 #[cfg(test)]
