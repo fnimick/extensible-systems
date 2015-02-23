@@ -136,8 +136,7 @@ mod trim_to_word_tests {
 }
 
 /// Given a word and a reference to a HashMap of words to frequencies (usize),
-/// converts the word to lower case and increments its associated frequency
-/// in the map.
+/// increments its associated frequency in the map.
 /// If the word is not present, it is added to the map with frequency 1.
 fn inc_count(map: &mut HashMap<String, usize>, word: String) {
     match map.get_mut(&word) {
