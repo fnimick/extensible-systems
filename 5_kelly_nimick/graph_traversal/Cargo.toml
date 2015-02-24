@@ -1,0 +1,5 @@
+[package]
+
+name = "graph_traversal"
+version = "0.0.1"
+authors = ["Frnacis Nimick <fnimick@gmail.com>"]
