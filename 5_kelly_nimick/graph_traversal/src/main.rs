@@ -30,7 +30,7 @@ fn open_file(filename: &str) -> BufferedReader<File> {
     BufferedReader::new(file.ok().expect("couldn't open file"))
 }
 
-/// Create the graph by reading edges from the Buffered
+/// Create the graph by reading edges from the Buffered Reader
 fn build_graph<B: Buffer>(reader: &mut B) -> graph::LabeledGraph {
     let mut g = graph::LabeledGraph::new();
     for line in reader.lines() {
@@ -50,7 +50,7 @@ fn build_graph<B: Buffer>(reader: &mut B) -> graph::LabeledGraph {
 
 #[cfg(test)]
 mod build_graph_test {
-    use super::build_graph;
+    use super::{open_file, build_graph};
     use graph::LabeledGraph;
     use std::io::{MemReader, BufferedReader};
 
@@ -67,6 +67,19 @@ mod build_graph_test {
         let mut r: BufferedReader<MemReader> =
             BufferedReader::new(MemReader::new(bytes));
         assert_eq!(build_graph(&mut r), g);
+    }
+    #[test]
+
+    fn test_graph_from_file() {
+        let mut file = open_file("test_graph.dat");
+        let g = build_graph(&mut file);
+
+        let mut eg = LabeledGraph::new();
+        eg.add_edge("a", "b");
+        eg.add_edge("a", "d");
+        eg.add_edge("b", "d");
+        eg.add_edge("c", "d");
+        assert_eq!(g, eg);
     }
 }
 
