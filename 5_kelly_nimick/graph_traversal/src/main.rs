@@ -48,6 +48,28 @@ fn build_graph<B: Buffer>(reader: &mut B) -> graph::LabeledGraph {
     g
 }
 
+#[cfg(test)]
+mod build_graph_test {
+    use super::build_graph;
+    use graph::LabeledGraph;
+    use std::io::{MemReader, BufferedReader};
+
+    #[test]
+    fn test_build_graph() {
+        let mut g = LabeledGraph::new();
+        g.add_edge("a", "b");
+        g.add_edge("b", "c");
+        g.add_edge("c", "d");
+        g.add_edge("e", "d");
+        g.add_edge("f", "d");
+        let input = "a b\nb c\nc d\ne d\nf d";
+        let bytes = input.to_string().into_bytes();
+        let mut r: BufferedReader<MemReader> =
+            BufferedReader::new(MemReader::new(bytes));
+        assert_eq!(build_graph(&mut r), g);
+    }
+}
+
 /// Query the user to find out what shortest path they want to find
 #[allow(unused_must_use)]
 fn query_user<W: Writer, R: Buffer>(output: &mut W, input: &mut R,
