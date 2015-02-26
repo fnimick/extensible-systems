@@ -35,10 +35,14 @@ fn build_graph<B: Buffer>(reader: &mut B) -> graph::LabeledGraph {
     let mut g = graph::LabeledGraph::new();
     for line in reader.lines() {
         let l: String  = line.unwrap();
-        let node: &str = l.words().take(1).next().unwrap();
-        let mut edges = l.words().skip(1);
-        for neighbor in edges {
-            g.add_edge(node, neighbor);
+        let mut words = l.words();
+        match words.next() {
+            Some(node) => {
+                for neighbor in words {
+                    g.add_edge(node, neighbor);
+                }
+            },
+            None => {},
         }
     }
     g
@@ -71,6 +75,7 @@ fn query_user<W: Writer, R: Buffer>(output: &mut W, input: &mut R,
         output.flush();
     }
 }
+
 
 #[cfg(test)]
 mod query_user_test {

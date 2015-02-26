@@ -92,8 +92,40 @@ impl Graph {
 #[cfg(test)]
 mod graph_test {
     use super::Graph;
+    use std::collections::BitvSet;
+    use std::collections::bitv::Bitv;
+
     #[test]
-    fn test_graph() {
+    fn test_add_node() {
+        let mut g = Graph::new();
+        assert_eq!(g.edges.len(), 0);
+        g.add_node();
+        assert_eq!(g.edges.len(), 1);
+    }
+
+    #[test]
+    fn test_add_edge() {
+        let mut g = Graph::new();
+        g.add_node();
+        g.add_node();
+        assert!(g.edges[0].is_empty());
+        assert!(g.edges[1].is_empty());
+        g.add_edge(0, 1);
+        assert_eq!(g.edges[0], BitvSet::from_bitv(Bitv::from_bytes(&[0b01000000])));
+        assert_eq!(g.edges[1], BitvSet::from_bitv(Bitv::from_bytes(&[0b10000000])));
+    }
+
+    #[test]
+    #[should_fail]
+    fn test_add_invalid_edge() {
+        let mut g = Graph::new();
+        g.add_node();
+        g.add_node();
+        g.add_edge(1, 2);
+    }
+
+    #[test]
+    fn test_shortest_path() {
         let mut g = Graph::new();
         g.add_node();
         g.add_node();
