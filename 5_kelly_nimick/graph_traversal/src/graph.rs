@@ -98,7 +98,7 @@ mod graph_test {
     #[test]
     fn test_add_node() {
         let mut g = Graph::new();
-        assert_eq!(g.edges.len(), 0);
+        assert!(g.edges.is_empty());
         g.add_node();
         assert_eq!(g.edges.len(), 1);
     }
@@ -203,9 +203,35 @@ impl LabeledGraph {
 
 #[cfg(test)]
 mod labeled_graph_test {
-    use super::LabeledGraph;
+    use super::{Graph, LabeledGraph};
+
     #[test]
-    fn test_labeled_graph() {
+    fn test_add_edge() {
+        let mut lg = LabeledGraph::new();
+        let mut g = Graph::new();
+        assert!(lg.labels.is_empty());
+        assert!(lg.indices.is_empty());
+        assert_eq!(lg.graph, g);
+        lg.add_edge("a", "b");
+        assert_eq!(*lg.labels.get("a").unwrap(), 0);
+        assert_eq!(*lg.labels.get("b").unwrap(), 1);
+        assert_eq!(lg.indices, vec!["a", "b"]);
+        g.add_node();
+        g.add_node();
+        g.add_edge(0, 1);
+        assert_eq!(lg.graph, g);
+        lg.add_edge("c", "b");
+        assert_eq!(*lg.labels.get("a").unwrap(), 0);
+        assert_eq!(*lg.labels.get("b").unwrap(), 1);
+        assert_eq!(*lg.labels.get("c").unwrap(), 2);
+        assert_eq!(lg.indices, vec!["a", "b", "c"]);
+        g.add_node();
+        g.add_edge(2, 1);
+        assert_eq!(lg.graph, g);
+    }
+
+    #[test]
+    fn test_shortest_path() {
         let mut g = LabeledGraph::new();
         g.add_edge("a", "b");
         g.add_edge("b", "c");
