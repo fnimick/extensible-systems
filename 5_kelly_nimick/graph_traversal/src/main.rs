@@ -25,6 +25,7 @@ fn main() {
 }
 
 /// Open the file as given by filename in the form of a Buffered Reader
+/// #[cfg(not(test)]
 fn open_file(filename: &str) -> BufferedReader<File> {
     let file = File::open(&Path::new(filename));
     BufferedReader::new(file.ok().expect("couldn't open file"))
@@ -67,5 +68,22 @@ fn query_user<W: Writer, R: Buffer>(output: &mut W, input: &mut R,
         } else {
             output.write_line(WRONG_NODE_COUNT);
         }
+    }
+}
+
+#[cfg(test)]
+mod query_user_test {
+    use super::query_user;
+    use std::io::{MemReader, BufferedReader};
+
+    #[test]
+    fn test_query_user() {
+    }
+
+    fn run_test(input: &str, expected: HashMap<String, usize>) {
+        let bytes = input.to_string().into_bytes();
+        let r: BufferedReader<MemReader> =
+            BufferedReader::new(MemReader::new(bytes));
+        assert_eq!(train(r), expected);
     }
 }
