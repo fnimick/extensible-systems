@@ -1,13 +1,16 @@
 #![allow(unstable)]
 use std::io::{File, BufferedReader};
+use graph::LabeledGraph;
 
 mod graph;
 
+static NO_PATH: &'static str = "No path found";
+static WRONG_NODE_COUNT: &'static str = "You must provide a start and end node";
+
 #[cfg(not(test))]
 fn main() {
-    use std::os;
-    use std::io;
-    use std::io::stdio::StdinReader;
+    use std::{io, os};
+    use std::io::stdio::{StdWriter, StdinReader};
 
     let args = os::args();
     let graph_file = match args.iter().skip(1).take(1).next() {
@@ -16,6 +19,9 @@ fn main() {
     };
     let mut file_reader = open_file(graph_file);
     let graph = build_graph(&mut file_reader);
+    let mut stdin = BufferedReader::new(io::stdin());
+    let mut stdout = io::stdout();
+    query_user(&mut stdout, &mut stdin, &graph);
 }
 
 /// Open the file as given by filename in the form of a Buffered Reader
@@ -24,7 +30,8 @@ fn open_file(filename: &str) -> BufferedReader<File> {
     BufferedReader::new(file.ok().expect("couldn't open file"))
 }
 
-fn build_graph<T: Reader>(reader: &mut BufferedReader<T>) -> graph::LabeledGraph {
+/// Create the graph by reading edges from the Buffered
+fn build_graph<B: Buffer>(reader: &mut B) -> graph::LabeledGraph {
     let mut g = graph::LabeledGraph::new();
     for line in reader.lines() {
         let l: String  = line.unwrap();
@@ -35,4 +42,30 @@ fn build_graph<T: Reader>(reader: &mut BufferedReader<T>) -> graph::LabeledGraph
         }
     }
     g
+}
+
+/// Query the user to find out what shortest path they want to find
+fn query_user<W: Writer, R: Buffer>(output: &mut W, input: &mut R,
+                                    graph: &LabeledGraph) {
+    loop {
+        output.write_str("-> ");
+        output.flush();
+        let mut line = input.read_line().ok().unwrap();
+        let nodes: Vec<&str> = line.words().collect();
+        if nodes.len() == 2 {
+            match graph.find_shortest_path(nodes[0], nodes[1]) {
+                Some(v) => {
+                    for n in v.iter() {
+                        output.write_str(format!("{} ", n).as_slice());
+                    }
+                    output.write_str("\n");
+                },
+                None => {
+                    output.write_line(NO_PATH);
+                }
+            }
+        } else {
+            output.write_line(WRONG_NODE_COUNT);
+        }
+    }
 }
