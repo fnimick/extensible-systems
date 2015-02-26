@@ -20,7 +20,7 @@ impl Ord for State {
 // Graph in adjacency list representation
 // edges[index] represents the adjacency list for node # index
 // BitvSet is used to ensure that we don't create duplicate edges
-#[derive(Show)]
+#[derive(Show, Eq, PartialEq, PartialOrd)]
 struct Graph {
     edges: Vec<BitvSet>,
 }
@@ -143,12 +143,12 @@ mod graph_test {
     }
 }
 
+#[derive(Show, Eq, PartialEq)]
 pub struct LabeledGraph {
     labels: HashMap<String, usize>,
     indices: Vec<String>,
     graph: Graph,
 }
-
 
 impl LabeledGraph {
     pub fn new() -> Self {
