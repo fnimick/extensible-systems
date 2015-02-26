@@ -143,14 +143,14 @@ mod graph_test {
     }
 }
 
-pub struct LabeledGraph<'a> {
+pub struct LabeledGraph {
     labels: HashMap<String, usize>,
     indices: Vec<String>,
     graph: Graph,
 }
 
 
-impl<'a> LabeledGraph<'a> {
+impl LabeledGraph {
     pub fn new() -> Self {
         LabeledGraph {
             labels: HashMap::new(),

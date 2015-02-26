@@ -80,16 +80,36 @@ fn query_user<W: Writer, R: Buffer>(output: &mut W, input: &mut R,
 #[cfg(test)]
 mod query_user_test {
     use super::query_user;
-    use std::io::{MemReader, BufferedReader};
+    use graph::LabeledGraph;
+    use std::io::{MemWriter, MemReader, BufferedReader};
 
     #[test]
     fn test_query_user() {
+        let g = create_graph();
+        run_test("a b", "a b", &g);
+        run_test("a d", "a b c d", &g);
     }
 
-    fn run_test(input: &str, expected: HashMap<String, usize>) {
-        let bytes = input.to_string().into_bytes();
-        let r: BufferedReader<MemReader> =
+    fn run_test(input: &str, output: &str, graph: &LabeledGraph) {
+        let mut user_input = input.to_string();
+        user_input.push_str("\n");
+        let bytes = user_input.into_bytes();
+        let mut r: BufferedReader<MemReader> =
             BufferedReader::new(MemReader::new(bytes));
-        assert_eq!(train(r), expected);
+        let mut w: MemWriter = MemWriter::new();
+        query_user(&mut w, &mut r, graph);
+        let result = String::from_utf8(w.into_inner()).ok().unwrap();
+        let expect = format!("-> {} \n-> ", output);
+        assert_eq!(result, expect);
+    }
+
+    fn create_graph() -> LabeledGraph {
+        let mut g = LabeledGraph::new();
+        g.add_edge("a", "b");
+        g.add_edge("b", "c");
+        g.add_edge("c", "d");
+        g.add_edge("e", "d");
+        g.add_edge("f", "d");
+        g
     }
 }
