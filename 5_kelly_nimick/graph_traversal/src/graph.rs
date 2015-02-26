@@ -1,4 +1,6 @@
 use std::collections::{BitvSet, BinaryHeap, HashMap};
+use std::iter;
+use std::slice;
 use std::usize;
 use std::cmp::Ordering;
 
@@ -62,7 +64,6 @@ impl Graph {
         let mut queue = BinaryHeap::new();
         queue.push(State { distance: 0, position: source, path: vec![source]});
 
-
         // while let: https://github.com/rust-lang/rfcs/pull/214
         while let Some(State { distance, position, path }) = queue.pop() {
             if position == target { return Some(path); }
@@ -90,7 +91,6 @@ impl Graph {
     }
 }
 
-
 #[cfg(test)]
 mod graph_test {
     use super::Graph;
@@ -114,10 +114,11 @@ mod graph_test {
 }
 
 pub struct LabeledGraph<'a> {
-    labels: HashMap<&'a str, usize>,
-    indices: Vec<&'a str>,
+    labels: HashMap<String, usize>,
+    indices: Vec<String>,
     graph: Graph,
 }
+
 
 impl<'a> LabeledGraph<'a> {
     pub fn new() -> Self {
@@ -130,33 +131,39 @@ impl<'a> LabeledGraph<'a> {
 
     // If the node label does not exist, adds it to the graph
     // If it does exist, does nothing
-    fn add_node_if_not_exists(&mut self, node: &'a str) {
-        if self.labels.contains_key(node) { return; }
+    fn add_node_if_not_exists(&mut self, node: &str) {
+        let key = String::from_str(node);
+        if self.labels.contains_key(&key) { return; }
         let index = self.graph.add_node();
-        self.labels.insert(node, index);
-        self.indices.push(node);
+        self.labels.insert(key.clone(), index);
+        self.indices.push(key);
     }
 
     // Adds an edge from source label to target label
     // Adds the associated nodes if they do not already exist
-    pub fn add_edge(&mut self, source: &'a str, target: &'a str) {
+    pub fn add_edge(&mut self, source: &str, target: &str) {
         self.add_node_if_not_exists(source);
         self.add_node_if_not_exists(target);
-        let source_idx = *self.labels.get(source).unwrap();
-        let target_idx = *self.labels.get(target).unwrap();
+        let (s, t) = (source.to_string(), target.to_string());
+        let source_idx = *self.labels.get(&s).unwrap();
+        let target_idx = *self.labels.get(&t).unwrap();
         self.graph.add_edge(source_idx, target_idx);
     }
 
-    pub fn find_shortest_path(&self, source: &'a str, target: &'a str) -> Option<Vec<&str>> {
-        if !self.labels.contains_key(source) || !self.labels.contains_key(target) {
+    // Finds the shortest path in a LabeledGraph
+    pub fn find_shortest_path(&self, source_str: &str, target_str: &str)
+            -> Option<Vec<&str>> {
+        let (source, target) = (source_str.to_string(), target_str.to_string());
+        if !self.labels.contains_key(&source) ||
+                !self.labels.contains_key(&target) {
             return None;
         }
-        let source_idx = *self.labels.get(source).unwrap();
-        let target_idx = *self.labels.get(target).unwrap();
+        let source_idx = *self.labels.get(&source).unwrap();
+        let target_idx = *self.labels.get(&target).unwrap();
         match self.graph.find_shortest_path(source_idx, target_idx) {
-            Some(res) => {
-                Some(res.iter().map(|&: n| {
-                    self.indices[*n]
+            Some(result) => {
+                Some(result.iter().map(|&: &n| {
+                    self.indices[n].as_slice()
                 }).collect())
             },
             None => None
@@ -178,6 +185,7 @@ mod labeled_graph_test {
         assert_eq!(g.find_shortest_path("a", "c").unwrap().len(), 3);
         assert_eq!(g.find_shortest_path("c", "a").unwrap().len(), 3);
         assert_eq!(g.find_shortest_path("d", "a").unwrap().len(), 4);
-        assert_eq!(g.find_shortest_path("a", "d").unwrap(), vec!["a", "b", "c", "d"]);
+        assert_eq!(g.find_shortest_path("a", "d").unwrap(),
+                   vec!["a", "b", "c", "d"]);
     }
 }

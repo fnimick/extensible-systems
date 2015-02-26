@@ -1,8 +1,8 @@
 #![allow(unstable)]
-use std::io;
 use std::io::{File, BufferedReader};
 
 mod graph;
+
 #[cfg(not(test))]
 fn main() {
     use std::os;
@@ -14,9 +14,8 @@ fn main() {
         Some(file) => file.as_slice(),
         None => panic!("Must provide graph data file")
     };
-    let file_reader = open_file(graph_file);
-    let graph = build_graph(file_reader);
-    println!("Hello, world!");
+    let mut file_reader = open_file(graph_file);
+    let graph = build_graph(&mut file_reader);
 }
 
 /// Open the file as given by filename in the form of a Buffered Reader
@@ -25,6 +24,15 @@ fn open_file(filename: &str) -> BufferedReader<File> {
     BufferedReader::new(file.ok().expect("couldn't open file"))
 }
 
-fn build_graph<'a, T>(reader: BufferedReader<T>) -> graph::LabeledGraph<'a> {
-    panic!("bang");
+fn build_graph<T: Reader>(reader: &mut BufferedReader<T>) -> graph::LabeledGraph {
+    let mut g = graph::LabeledGraph::new();
+    for line in reader.lines() {
+        let l: String  = line.unwrap();
+        let node: &str = l.words().take(1).next().unwrap();
+        let mut edges = l.words().skip(1);
+        for neighbor in edges {
+            g.add_edge(node, neighbor);
+        }
+    }
+    g
 }
