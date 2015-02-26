@@ -1,6 +1,4 @@
 use std::collections::{BitvSet, BinaryHeap, HashMap};
-use std::iter;
-use std::slice;
 use std::usize;
 use std::cmp::Ordering;
 

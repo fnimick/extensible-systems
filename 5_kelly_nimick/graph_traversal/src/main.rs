@@ -10,7 +10,6 @@ static WRONG_NODE_COUNT: &'static str = "You must provide a start and end node";
 #[cfg(not(test))]
 fn main() {
     use std::{io, os};
-    use std::io::stdio::{StdWriter, StdinReader};
 
     let args = os::args();
     let graph_file = match args.iter().skip(1).take(1).next() {
@@ -46,12 +45,12 @@ fn build_graph<B: Buffer>(reader: &mut B) -> graph::LabeledGraph {
 }
 
 /// Query the user to find out what shortest path they want to find
+#[allow(unused_must_use)]
 fn query_user<W: Writer, R: Buffer>(output: &mut W, input: &mut R,
                                     graph: &LabeledGraph) {
-    loop {
-        output.write_str("-> ");
-        output.flush();
-        let mut line = input.read_line().ok().unwrap();
+    output.write_str("-> ");
+    output.flush();
+    while let Some(line) = input.read_line().ok() {
         let nodes: Vec<&str> = line.words().collect();
         if nodes.len() == 2 {
             match graph.find_shortest_path(nodes[0], nodes[1]) {
@@ -68,6 +67,8 @@ fn query_user<W: Writer, R: Buffer>(output: &mut W, input: &mut R,
         } else {
             output.write_line(WRONG_NODE_COUNT);
         }
+        output.write_str("-> ");
+        output.flush();
     }
 }
 
