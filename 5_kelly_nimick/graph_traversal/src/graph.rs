@@ -44,7 +44,6 @@ impl Graph {
         assert!(source < self.edges.len());
         assert!(target < self.edges.len());
         self.edges[source].insert(target);
-        self.edges[target].insert(source);
     }
 
     // Uses Dijkstra's algorithm to find the shortest path from the
@@ -112,6 +111,9 @@ mod graph_test {
         assert!(g.edges[1].is_empty());
         g.add_edge(0, 1);
         assert_eq!(g.edges[0], BitvSet::from_bitv(Bitv::from_bytes(&[0b01000000])));
+        assert!(g.edges[1].is_empty());
+        g.add_edge(1, 0);
+        assert_eq!(g.edges[0], BitvSet::from_bitv(Bitv::from_bytes(&[0b01000000])));
         assert_eq!(g.edges[1], BitvSet::from_bitv(Bitv::from_bytes(&[0b10000000])));
     }
 
@@ -138,7 +140,7 @@ mod graph_test {
         assert_eq!(g.find_shortest_path(0, 1).unwrap().len(), 2);
         assert_eq!(g.find_shortest_path(1, 2).unwrap().len(), 2);
         assert_eq!(g.find_shortest_path(0, 2).unwrap().len(), 2);
-        assert_eq!(g.find_shortest_path(3, 2).unwrap().len(), 2);
+        assert_eq!(g.find_shortest_path(3, 2), None);
         assert_eq!(g.find_shortest_path(0, 3).unwrap().len(), 3);
     }
 }
@@ -213,8 +215,8 @@ mod labeled_graph_test {
         assert_eq!(g.find_shortest_path("a", "b").unwrap().len(), 2);
         assert_eq!(g.find_shortest_path("b", "c").unwrap().len(), 2);
         assert_eq!(g.find_shortest_path("a", "c").unwrap().len(), 3);
-        assert_eq!(g.find_shortest_path("c", "a").unwrap().len(), 3);
-        assert_eq!(g.find_shortest_path("d", "a").unwrap().len(), 4);
+        assert_eq!(g.find_shortest_path("c", "a"), None);
+        assert_eq!(g.find_shortest_path("d", "a"), None);
         assert_eq!(g.find_shortest_path("a", "d").unwrap(),
                    vec!["a", "b", "c", "d"]);
     }
