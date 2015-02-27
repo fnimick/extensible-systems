@@ -145,6 +145,8 @@ mod graph_test {
     }
 }
 
+/// LabeledGraph is a wrapper around Graph that supports named
+/// nodes.
 #[derive(Show, Eq, PartialEq)]
 pub struct LabeledGraph {
     labels: HashMap<String, usize>,
