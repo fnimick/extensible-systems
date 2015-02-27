@@ -77,8 +77,9 @@ mod build_graph_test {
         let mut eg = LabeledGraph::new();
         eg.add_edge("a", "b");
         eg.add_edge("a", "d");
+        eg.add_edge("b", "a");
         eg.add_edge("b", "d");
-        eg.add_edge("c", "d");
+        eg.add_edge("d", "c");
         assert_eq!(g, eg);
     }
 }
