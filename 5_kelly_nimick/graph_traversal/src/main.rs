@@ -24,15 +24,14 @@ fn main() {
 }
 
 /// Open the file as given by filename in the form of a Buffered Reader
-/// #[cfg(not(test)]
 fn open_file(filename: &str) -> BufferedReader<File> {
     let file = File::open(&Path::new(filename));
     BufferedReader::new(file.ok().expect("couldn't open file"))
 }
 
 /// Create the graph by reading edges from the Buffered Reader
-fn build_graph<B: Buffer>(reader: &mut B) -> graph::LabeledGraph {
-    let mut g = graph::LabeledGraph::new();
+fn build_graph<B: Buffer>(reader: &mut B) -> LabeledGraph {
+    let mut g = LabeledGraph::new();
     for line in reader.lines() {
         let l: String  = line.unwrap();
         let mut words = l.words();
@@ -101,7 +100,7 @@ fn query_user<W: Writer, R: Buffer>(output: &mut W, input: &mut R,
                     output.write_str("\n");
                 },
                 None => {
-                    output.write_line(NO_PATH);
+                    output.write_line(format!("{} ", NO_PATH).as_slice());
                 }
             }
         } else {
@@ -115,7 +114,7 @@ fn query_user<W: Writer, R: Buffer>(output: &mut W, input: &mut R,
 
 #[cfg(test)]
 mod query_user_test {
-    use super::query_user;
+    use super::{NO_PATH, query_user};
     use graph::LabeledGraph;
     use std::io::{MemWriter, MemReader, BufferedReader};
 
@@ -124,6 +123,7 @@ mod query_user_test {
         let g = create_graph();
         run_test("a b", "a b", &g);
         run_test("a d", "a b c d", &g);
+        run_test("d a", NO_PATH, &g);
     }
 
     fn run_test(input: &str, output: &str, graph: &LabeledGraph) {

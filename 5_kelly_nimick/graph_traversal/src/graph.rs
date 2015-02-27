@@ -26,19 +26,20 @@ struct Graph {
 }
 
 impl Graph {
+    /// Create a new Graph structure
     fn new() -> Graph {
         Graph{
             edges: Vec::new(),
         }
     }
 
-    // Adds a node and returns its index
+    /// Adds a node and returns its index
     fn add_node(&mut self) -> usize {
         self.edges.push(BitvSet::new());
         self.edges.len() - 1
     }
 
-    // Edge addition
+    /// Edge addition
     fn add_edge(&mut self, source: usize, target: usize) {
         // checks to make sure that these nodes exist
         assert!(source < self.edges.len());
@@ -46,8 +47,8 @@ impl Graph {
         self.edges[source].insert(target);
     }
 
-    // Uses Dijkstra's algorithm to find the shortest path from the
-    // source to the target node
+    /// Uses Dijkstra's algorithm to find the shortest path from the
+    /// source to the target node
     fn find_shortest_path(&self, source: usize, target: usize) -> Option<Vec<usize>> {
         // dist[node] is the length of the shortest path from source to node,
         // and the path expressed as a Vec<usize>
@@ -155,6 +156,7 @@ pub struct LabeledGraph {
 }
 
 impl LabeledGraph {
+    /// Create a new LabeledGraph
     pub fn new() -> Self {
         LabeledGraph {
             labels: HashMap::new(),
@@ -163,8 +165,7 @@ impl LabeledGraph {
         }
     }
 
-    // If the node label does not exist, adds it to the graph
-    // If it does exist, does nothing
+    /// Add a node to the graph if it doesn't already exist
     fn add_node_if_not_exists(&mut self, node: &str) {
         let key = String::from_str(node);
         if self.labels.contains_key(&key) { return; }
@@ -173,8 +174,8 @@ impl LabeledGraph {
         self.indices.push(key);
     }
 
-    // Adds an edge from source label to target label
-    // Adds the associated nodes if they do not already exist
+    /// Adds an edge from source label to target label
+    /// Adds the associated nodes if they do not already exist
     pub fn add_edge(&mut self, source: &str, target: &str) {
         self.add_node_if_not_exists(source);
         self.add_node_if_not_exists(target);
@@ -184,7 +185,7 @@ impl LabeledGraph {
         self.graph.add_edge(source_idx, target_idx);
     }
 
-    // Finds the shortest path in a LabeledGraph
+    /// Finds the shortest path in a LabeledGraph
     pub fn find_shortest_path(&self, source_str: &str, target_str: &str)
             -> Option<Vec<&str>> {
         let (source, target) = (source_str.to_string(), target_str.to_string());
