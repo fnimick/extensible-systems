@@ -1,9 +1,10 @@
-use self::FileResult::{FileOk, NotFound, FileError};
+use self::FileResult::{FileOk, NotFound, PermissionDenied, FileError};
 use std::io::{File, BufferedReader, IoError, IoErrorKind};
 
 pub enum FileResult {
     FileOk(BufferedReader<File>),
     NotFound,
+    PermissionDenied,
     FileError,
 }
 
@@ -12,6 +13,7 @@ pub fn open_file(path: &str) -> FileResult {
     match File::open(&Path::new(path)) {
         Ok(f) => FileOk(BufferedReader::new(f)),
         Err(IoError{kind:IoErrorKind::FileNotFound, ..}) => NotFound,
+        Err(IoError{kind:IoErrorKind::PermissionDenied, ..}) => PermissionDenied,
         _ => FileError
     }
 }
