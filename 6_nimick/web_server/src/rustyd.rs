@@ -16,13 +16,16 @@ static INDEX_FILES: [&'static str; 3] = ["index.html", "index.shtml", "index.txt
 pub fn handle_client(mut stream: BufferedStream<TcpStream>) {
     let incoming = stream.read_line().unwrap();
     println!("{}", incoming);
-    let path = get_path(&incoming).unwrap();
-    println!("{}", path);
-
-    let request = open_file(path);
-    match stream.write(prepend_response(request, is_html(path)).get_ref()) {
-        Ok(()) => println!("Response sent"),
-        Err(e) => println!("Failed sending response: {}", e),
+    match get_path(&incoming) {
+        Some(path) => {
+            println!("{}", path);
+            let request = open_file(path);
+            match stream.write(prepend_response(request, is_html(path)).get_ref()) {
+                Ok(()) => println!("Response sent"),
+                Err(e) => println!("Failed sending response: {}", e),
+            }
+        },
+        None => ()
     }
 }
 
