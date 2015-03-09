@@ -2,10 +2,8 @@ use std::io;
 use std::io::{TcpListener, TcpStream, Listener, Acceptor, BufferedStream};
 use std::thread::Thread;
 use std::io::{MemWriter, BufWriter};
-use files::FileResult;
+use files::{open_file, FileResult};
 use files::FileResult::{FileOk, NotFound, PermissionDenied, FileError};
-
-mod files;
 
 static HEADER: &'static str = "HTTP/1.0 ";
 static CONTENT_TYPE: &'static str = "Content-type: text/";
@@ -18,20 +16,12 @@ pub fn handle_client(mut stream: BufferedStream<TcpStream>) {
     let incoming = stream.read_line().unwrap();
     println!("{}", incoming);
 
-
     //TODO
-    let request = NotFound;
+    let request = open_file("rustyd.rs");
     match stream.write(prepend_response(request, false).get_ref()) {
         Ok(()) => println!("Response sent"),
         Err(e) => println!("Failed sending response: {}", e),
     }
-}
-
-fn get_path(s: &String) -> Option<String> {
-    if s[0 .. 4] != "GET " {
-        return None;
-    }
-    Some("")
 }
 
 pub fn serve_forever() {
@@ -52,13 +42,7 @@ pub fn serve_forever() {
 fn prepend_response(response: FileResult, html: bool) -> MemWriter {
     let mut w = MemWriter::with_capacity(HEADER.len() + SERVER_NAME.len());
     w.write_str(HEADER);
-    let resp = match response {
-        FileOk(..) => "200 OK",
-        NotFound => "404 Not Found",
-        PermissionDenied => "403 Forbidden",
-        _ => "400 Bad Request"
-    };
-    w.write_line(resp);
+    w.write_line(response.as_str());
     w.write_line(SERVER_NAME);
 
     match response {
@@ -73,7 +57,7 @@ fn prepend_response(response: FileResult, html: bool) -> MemWriter {
             }
 
             w.write_uint(file.get_ref().len());
-            w.write_str("\n");;
+            w.write_str("\n");
             w.write(file.get_ref());
         },
         _ => ()

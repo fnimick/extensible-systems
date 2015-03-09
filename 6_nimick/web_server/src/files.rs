@@ -8,6 +8,18 @@ pub enum FileResult {
     FileError,
 }
 
+impl FileResult {
+
+    pub fn as_str(&self) -> &str {
+        match *self {
+            FileOk(..) => "200 OK",
+            NotFound => "404 Not Found",
+            PermissionDenied => "403 Forbidden",
+            FileError => "400 Bad Request"
+        }
+    }
+}
+
 pub fn open_file(path: &str) -> FileResult {
     match File::open(&Path::new(path)) {
         Ok(f) => FileOk(BufferedReader::new(f)),
