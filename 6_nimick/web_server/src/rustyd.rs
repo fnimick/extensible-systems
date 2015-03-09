@@ -53,16 +53,15 @@ fn prepend_response(response: FileResult, html: bool) -> MemWriter {
 
             let mut file = MemWriter::new();
             while let Ok(o) = buf.read_line() {
-                file.write_line(o.as_slice());
+                file.write_str(o.as_slice());
             }
 
             w.write_uint(file.get_ref().len());
-            w.write_str("\n");
+            w.write_str("\n\n");
             w.write(file.get_ref());
         },
         _ => ()
     };
-    w.write_str("\n");
 
     w
 }
