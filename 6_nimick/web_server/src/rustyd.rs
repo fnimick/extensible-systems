@@ -19,12 +19,7 @@ pub fn handle_client(mut stream: BufferedStream<TcpStream>) {
     let path = get_path(&incoming).unwrap();
     println!("{}", path);
 
-    let mut full_path = os::getcwd().unwrap();
-    full_path.push(path);
-    println!("{}", full_path.display());
-
-    //TODO
-    let request = open_file("rustyd.rs");
+    let request = open_file(path);
     match stream.write(prepend_response(request, is_html(path)).get_ref()) {
         Ok(()) => println!("Response sent"),
         Err(e) => println!("Failed sending response: {}", e),
