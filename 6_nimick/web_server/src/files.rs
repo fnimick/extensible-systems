@@ -8,7 +8,6 @@ pub enum FileResult {
     FileError,
 }
 
-
 pub fn open_file(path: &str) -> FileResult {
     match File::open(&Path::new(path)) {
         Ok(f) => FileOk(BufferedReader::new(f)),
