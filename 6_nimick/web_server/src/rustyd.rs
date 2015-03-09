@@ -25,10 +25,14 @@ pub fn handle_client(mut stream: BufferedStream<TcpStream>) {
 
     //TODO
     let request = open_file("rustyd.rs");
-    match stream.write(prepend_response(request, false).get_ref()) {
+    match stream.write(prepend_response(request, is_html(path)).get_ref()) {
         Ok(()) => println!("Response sent"),
         Err(e) => println!("Failed sending response: {}", e),
     }
+}
+
+fn is_html(s: &str) -> bool {
+    s.split('.').rev().next().unwrap() == "html"
 }
 
 fn get_path(s: &String) -> Option<&str> {
@@ -36,7 +40,6 @@ fn get_path(s: &String) -> Option<&str> {
     match iter.next() {
         None => return None,
         Some(s) => {
-            println!("test{}test", s);
             if s != "GET" {
                 return None;
             }
