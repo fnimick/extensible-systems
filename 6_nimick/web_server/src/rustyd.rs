@@ -1,9 +1,11 @@
-use std::io::{TcpListener, TcpStream, Listener, Acceptor};
-use std::io::net::tcp;
+use std::io;
+use std::io::{TcpListener, TcpStream, Listener, Acceptor, BufferedStream};
 use std::thread::Thread;
 use std::io::{MemWriter, BufWriter};
 use files::FileResult;
 use files::FileResult::{FileOk, NotFound, PermissionDenied, FileError};
+
+mod files;
 
 static HEADER: &'static str = "HTTP/1.0 ";
 static CONTENT_TYPE: &'static str = "Content-type: text/";
@@ -12,11 +14,24 @@ static SERVER_NAME: &'static str = "kelly_nimick_web_server";
 static BIND_ADDR: &'static str = "127.0.0.1:8000";
 static INDEX_FILES: [&'static str; 3] = ["index.html", "index.shtml", "index.txt"];
 
-pub fn handle_client(mut stream: TcpStream, request: FileResult) {
+pub fn handle_client(mut stream: BufferedStream<TcpStream>) {
+    let incoming = stream.read_line().unwrap();
+    println!("{}", incoming);
+
+
+    //TODO
+    let request = NotFound;
     match stream.write(prepend_response(request, false).get_ref()) {
         Ok(()) => println!("Response sent"),
         Err(e) => println!("Failed sending response: {}", e),
     }
+}
+
+fn get_path(s: &String) -> Option<String> {
+    if s[0 .. 4] != "GET " {
+        return None;
+    }
+    Some("")
 }
 
 pub fn serve_forever() {
@@ -27,7 +42,7 @@ pub fn serve_forever() {
             Err(e) => {},
             Ok(stream) => {
                 Thread::spawn(move || {
-                    handle_client(stream, NotFound)
+                    handle_client(BufferedStream::new(stream))
                 });
             }
         }
