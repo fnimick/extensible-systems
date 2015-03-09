@@ -1,4 +1,5 @@
 use std::io;
+use std::os;
 use std::io::{TcpListener, TcpStream, Listener, Acceptor, BufferedStream};
 use std::thread::Thread;
 use std::io::{MemWriter, BufWriter};
@@ -15,12 +16,42 @@ static INDEX_FILES: [&'static str; 3] = ["index.html", "index.shtml", "index.txt
 pub fn handle_client(mut stream: BufferedStream<TcpStream>) {
     let incoming = stream.read_line().unwrap();
     println!("{}", incoming);
+    let path = get_path(&incoming).unwrap();
+    println!("{}", path);
+
+    let mut full_path = os::getcwd().unwrap();
+    full_path.push(path);
+    println!("{}", full_path.display());
 
     //TODO
     let request = open_file("rustyd.rs");
     match stream.write(prepend_response(request, false).get_ref()) {
         Ok(()) => println!("Response sent"),
         Err(e) => println!("Failed sending response: {}", e),
+    }
+}
+
+fn get_path(s: &String) -> Option<&str> {
+    let mut iter = s.words();
+    match iter.next() {
+        None => return None,
+        Some(s) => {
+            println!("test{}test", s);
+            if s != "GET" {
+                return None;
+            }
+        }
+    }
+    match iter.next() {
+        None => None,
+        Some(s) => {
+            match s.split(|&: c: char| {c == '?' || c == '#'}).next() {
+                Some(r) => {
+                    Some(r.slice_from(1))
+                },
+                _ => None
+            }
+        }
     }
 }
 
