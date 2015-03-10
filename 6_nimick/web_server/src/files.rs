@@ -22,6 +22,8 @@ impl FileResult {
     }
 }
 
+/// If we find PermissionDenied or FileError as the result of opening an index
+/// file, then that is returned.
 pub fn open_file_with_indices(path: &String) -> (FileResult, bool) {
     if !path.is_empty() && path.chars().rev().next().unwrap() != '/' {
         return (open_file(path), is_html(path));
@@ -29,8 +31,8 @@ pub fn open_file_with_indices(path: &String) -> (FileResult, bool) {
     for index_file in INDEX_FILES.iter() {
         let index_path = path.clone().to_string() + *index_file;
         match open_file(&index_path) {
-            NotFound => { continue; },
-            r => { return (r, is_html(&index_path)); }
+            NotFound => continue,
+            r => return (r, is_html(&index_path))
         }
     }
     (NotFound, false)
