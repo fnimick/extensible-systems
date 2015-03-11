@@ -18,7 +18,7 @@ pub fn handle_client(mut stream: BufferedStream<TcpStream>) {
     let (request, html) = match get_path(&incoming) {
         Some(path) => {
             println!("{}", path);
-            open_file_with_indices(path)
+            open_file_with_indices(&path.to_string())
         },
         None => {
             println!("Bad request");
