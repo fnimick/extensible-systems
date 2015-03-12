@@ -12,7 +12,8 @@ static CONTENT_LEN: &'static str = "Content-length: ";
 static SERVER_NAME: &'static str = "kelly_nimick_web_server";
 static BIND_ADDR: &'static str = "127.0.0.1:8000";
 
-pub fn handle_client(mut stream: BufferedStream<TcpStream>) {
+/// Accept an incoming client stream and respond to its request
+pub fn handle_client<S: Buffer + Writer>(stream: &mut S) {
     let incoming = stream.read_line().unwrap();
     println!("{}", incoming);
     let (request, html) = match get_path(&incoming) {
@@ -28,6 +29,25 @@ pub fn handle_client(mut stream: BufferedStream<TcpStream>) {
     match stream.write(prepend_response(request, html).get_ref()) {
         Ok(()) => println!("Response sent"),
         Err(e) => println!("Failed sending response: {}", e),
+    }
+}
+
+#[cfg(test)]
+mod handle_client_tests {
+    use super::{prepend_response, handle_client};
+    use std::io::BufferedStream;
+    use files::open_file;
+    use stream::MemoryStream;
+
+    #[test]
+    fn test_handle_client() {
+        let request = "GET /test/index.txt\n".to_string();
+        let stream = MemoryStream::new(request);
+        let mut s = BufferedStream::new(stream);
+        handle_client(&mut s);
+        let expect = String::from_utf8(prepend_response(
+                open_file("test/index.txt"), false).into_inner()).ok().unwrap();
+        assert_eq!(s.into_inner().into_inner().trim(), expect.trim());
     }
 }
 
@@ -62,7 +82,8 @@ pub fn serve_forever() {
             Err(e) => {},
             Ok(stream) => {
                 Thread::spawn(move || {
-                    handle_client(BufferedStream::new(stream))
+                    let mut stream = BufferedStream::new(stream);
+                    handle_client(&mut stream)
                 });
             }
         }
