@@ -32,10 +32,11 @@ pub fn open_file_with_indices(path: &str) -> (FileResult, bool) {
         return (open_file(path), is_html(path));
     }
     for index_file in INDEX_FILES.iter() {
-        let index_path = path.to_string() + *index_file;
-        match open_file(index_path.as_slice()) {
+        let index_path_string: String = path.to_string() + *index_file;
+        let index_path: &str = index_path_string.as_slice();
+        match open_file(index_path) {
             NotFound => continue,
-            r => return (r, is_html(index_path.as_slice()))
+            r => return (r, is_html(index_path))
         }
     }
     (NotFound, true)
