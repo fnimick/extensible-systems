@@ -1,25 +1,26 @@
-use std::io;
-use std::os;
-use std::io::{TcpListener, TcpStream, Listener, Acceptor, BufferedStream};
-use std::thread::Thread;
-use std::io::{MemWriter, BufWriter};
+#[cfg(not(test))]
+use std::io::{TcpListener, Listener, Acceptor, BufferedStream};
+
+use std::io::MemWriter;
 use files::{open_file_with_indices, FileResult};
-use files::FileResult::{FileOk, NotFound, PermissionDenied, FileError};
+use files::FileResult::{FileOk, FileError};
 
 static HEADER: &'static str = "HTTP/1.0 ";
 static CONTENT_TYPE: &'static str = "Content-type: text/";
 static CONTENT_LEN: &'static str = "Content-length: ";
 static SERVER_NAME: &'static str = "kelly_nimick_web_server";
+
+#[cfg(not(test))]
 static BIND_ADDR: &'static str = "127.0.0.1:8000";
 
 /// Accept an incoming client stream and respond to its request
 pub fn handle_client<S: Buffer + Writer>(stream: &mut S) {
     let incoming = stream.read_line().unwrap();
     println!("{}", incoming);
-    let (request, html) = match get_path(&incoming) {
+    let (request, html) = match get_path(incoming.as_slice()) {
         Some(path) => {
             println!("{}", path);
-            open_file_with_indices(&path.to_string())
+            open_file_with_indices(path)
         },
         None => {
             println!("Bad request");
@@ -41,17 +42,18 @@ mod handle_client_tests {
 
     #[test]
     fn test_handle_client() {
-        let request = "GET /test/index.txt\n".to_string();
+        let request = "GET /test/index.txt\n";
         let stream = MemoryStream::new(request);
         let mut s = BufferedStream::new(stream);
         handle_client(&mut s);
         let expect = String::from_utf8(prepend_response(
                 open_file("test/index.txt"), false).into_inner()).ok().unwrap();
-        assert_eq!(s.into_inner().into_inner().trim(), expect.trim());
+        assert_eq!(s.into_inner().into_inner().1, expect);
     }
 }
 
-fn get_path(s: &String) -> Option<&str> {
+/// Get the pathname associated with the HTTP request
+fn get_path(s: &str) -> Option<&str> {
     let mut iter = s.words();
     match iter.next() {
         None => return None,
@@ -74,12 +76,31 @@ fn get_path(s: &String) -> Option<&str> {
     }
 }
 
+#[cfg(test)]
+mod get_path_tests {
+    use super::get_path;
+
+    #[test]
+    fn test_get_path() {
+        assert_eq!(get_path("GET /foo.html").unwrap(), "foo.html");
+        assert_eq!(get_path("GET /foo.html?query=bar").unwrap(), "foo.html");
+        assert_eq!(get_path("GET /foo.html#hash").unwrap(), "foo.html");
+        assert_eq!(get_path("GET /test/foo.html#hash").unwrap(), "test/foo.html");
+        assert_eq!(get_path("HEAD /foo.html#hash"), None);
+        assert_eq!(get_path(""), None);
+    }
+}
+
+/// Start accepting TCP requests and responding to HTTP/0.9 requests
+#[cfg(not(test))]
 pub fn serve_forever() {
+    use std::thread::Thread;
+
     let listener = TcpListener::bind(BIND_ADDR).unwrap();
     let mut acceptor = listener.listen().unwrap();
     for stream in acceptor.incoming() {
         match stream {
-            Err(e) => {},
+            Err(..) => {},
             Ok(stream) => {
                 Thread::spawn(move || {
                     let mut stream = BufferedStream::new(stream);
@@ -90,18 +111,19 @@ pub fn serve_forever() {
     }
 }
 
+/// Add the HTTP/0.9 headers to the output
+#[allow(unused_must_use)]
 fn prepend_response(response: FileResult, html: bool) -> MemWriter {
     let mut w = MemWriter::with_capacity(HEADER.len() + SERVER_NAME.len());
     w.write_str(HEADER);
     w.write_line(response.as_str());
     w.write_line(SERVER_NAME);
+    w.write_str(CONTENT_TYPE);
+    w.write_line(if html { "html" } else { "plain" });
+    w.write_str(CONTENT_LEN);
 
     match response {
         FileOk(mut buf) => {
-            w.write_str(CONTENT_TYPE);
-            w.write_line(if html { "html" } else { "plain" });
-            w.write_str(CONTENT_LEN);
-
             let mut file = MemWriter::new();
             while let Ok(o) = buf.read_line() {
                 file.write_str(o.as_slice());
@@ -111,7 +133,10 @@ fn prepend_response(response: FileResult, html: bool) -> MemWriter {
             w.write_str("\n\n");
             w.write(file.get_ref());
         },
-        _ => ()
+        _ => {
+            w.write_uint(0);
+            w.write_str("\n\n");
+        }
     };
 
     w

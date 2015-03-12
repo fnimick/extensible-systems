@@ -27,18 +27,18 @@ impl FileResult {
 /// file, then that is returned.
 /// A borrowed String is passed in rather than a &str, because we are
 /// modifying its contents
-pub fn open_file_with_indices(path: &String) -> (FileResult, bool) {
+pub fn open_file_with_indices(path: &str) -> (FileResult, bool) {
     if !path.is_empty() && path.chars().rev().next().unwrap() != '/' {
-        return (open_file(path.as_slice()), is_html(path.as_slice()));
+        return (open_file(path), is_html(path));
     }
     for index_file in INDEX_FILES.iter() {
-        let index_path = path.clone() + *index_file;
+        let index_path = path.to_string() + *index_file;
         match open_file(index_path.as_slice()) {
             NotFound => continue,
             r => return (r, is_html(index_path.as_slice()))
         }
     }
-    (NotFound, false)
+    (NotFound, true)
 }
 
 #[cfg(test)]
@@ -47,8 +47,8 @@ mod open_file_with_indices_tests {
 
     #[test]
     fn test_file_not_exist() {
-        let my_str = "wharrgarbl".to_string();
-        match open_file_with_indices(&my_str) {
+        let my_str = "wharrgarbl";
+        match open_file_with_indices(my_str) {
             (FileResult::NotFound, false) => (),
             _ => panic!("bang"),
         }
@@ -56,8 +56,8 @@ mod open_file_with_indices_tests {
 
     #[test]
     fn test_file_exists() {
-        let my_str = "test/index.html".to_string();
-        match open_file_with_indices(&my_str) {
+        let my_str = "test/index.html";
+        match open_file_with_indices(my_str) {
             (FileResult::FileOk(..), true) => (),
             _ => panic!("bang"),
         }
@@ -65,8 +65,8 @@ mod open_file_with_indices_tests {
 
     #[test]
     fn test_directory() {
-        let my_str = "test/".to_string();
-        match open_file_with_indices(&my_str) {
+        let my_str = "test/";
+        match open_file_with_indices(my_str) {
             (FileResult::FileOk(..), true) => (),
             _ => panic!("bang"),
         }
