@@ -1,4 +1,4 @@
-use self::FileResult::{FileOk, NotFound, PermissionDenied, FileError};
+use self::FileResult::{FileOk, NotFound, PermissionDenied, BadRequest, FileError};
 use std::io::{File, BufferedReader, IoError, IoErrorKind};
 
 static INDEX_FILES: [&'static str; 3] = ["index.html", "index.shtml", "index.txt"];
@@ -7,6 +7,7 @@ pub enum FileResult {
     FileOk(BufferedReader<File>),
     NotFound,
     PermissionDenied,
+    BadRequest,
     FileError,
 }
 
@@ -18,28 +19,27 @@ impl FileResult {
             FileOk(..) => "200 OK",
             NotFound => "404 Not Found",
             PermissionDenied => "403 Forbidden",
-            FileError => "400 Bad Request"
+            BadRequest => "400 Bad Request",
+            FileError => "500 Internal Server Error"
         }
     }
 }
 
 /// If we find PermissionDenied or FileError as the result of opening an index
 /// file, then that is returned.
-/// A borrowed String is passed in rather than a &str, because we are
-/// modifying its contents
 pub fn open_file_with_indices(path: &str) -> (FileResult, bool) {
     if !path.is_empty() && path.chars().rev().next().unwrap() != '/' {
         return (open_file(path), is_html(path));
     }
     for index_file in INDEX_FILES.iter() {
-        let index_path_string: String = path.to_string() + *index_file;
+        let index_path_string = path.to_string() + *index_file;
         let index_path: &str = index_path_string.as_slice();
         match open_file(index_path) {
             NotFound => continue,
             r => return (r, is_html(index_path))
         }
     }
-    (NotFound, true)
+    (NotFound, false)
 }
 
 #[cfg(test)]

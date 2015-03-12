@@ -3,7 +3,7 @@ use std::io::{TcpListener, Listener, Acceptor, BufferedStream};
 
 use std::io::MemWriter;
 use files::{open_file_with_indices, FileResult};
-use files::FileResult::{FileOk, FileError};
+use files::FileResult::{FileOk, BadRequest};
 
 static HEADER: &'static str = "HTTP/1.0 ";
 static CONTENT_TYPE: &'static str = "Content-type: text/";
@@ -24,7 +24,7 @@ pub fn handle_client<S: Buffer + Writer>(stream: &mut S) {
         },
         None => {
             println!("Bad request");
-            (FileError, false)
+            (BadRequest, false)
         }
     };
     match stream.write(prepend_response(request, html).get_ref()) {
