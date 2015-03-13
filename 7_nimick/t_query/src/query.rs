@@ -2,19 +2,14 @@ extern crate regex;
 use regex::Regex;
 use t::T;
 use self::Query::{From, Enable, Disable, Invalid};
+//use t::TQueryResult::{TOk, DisambiguateStart, DisambiguateDestination, NoSuchStation, NoSuchPath};
+//use t::TOperationResult::{Successful, DisambiguateOp, NoSuchStationOp};
+//use t::TStep::{Station, Switch, Ensure};
 
 //mod t;
 
-static PROMPT_STRING: &'static str = "===>>>";
-static DISAMBIG_START: &'static str = "disambiguate your start: ";
-static DISAMBIG_DEST: &'static str = "disambiguate your destination: ";
-static DISAMBIG_OP: &'static str = "disambiguate your target: ";
-static NO_SUCH_START: &'static str = "no such start: ";
-static NO_SUCH_DEST: &'static str = "no such destination: ";
-static NO_SUCH_DISABLE: &'static str = "no such station to disable: ";
-static NO_SUCH_ENABLE: &'static str = "no such station to enable: ";
-static SWITCH: &'static str = "---switch from {} to {}";
-static ENSURE: &'static str = "---ensure you are on {}";
+static PROMPT_STRING: &'static str = "===>>> ";
+static INVALID_QUERY: &'static str = "Invalid command format.\n";
 
 macro_rules! regex (
     ($s:expr) => (regex::Regex::new($s).unwrap());
@@ -60,7 +55,7 @@ fn parse_line<'a>(line: &'a str, from_regex: &Regex, disable_regex: &Regex, enab
 
 #[allow(unused_must_use)]
 pub fn query_user<W: Writer, R: Buffer>(output: &mut W, input: &mut R,
-                                    t: &T) {
+                                    t: &mut T) {
     let (from_regex, disable_regex, enable_regex) = compile_regexes();
 
     // Why doesn't this work?
@@ -73,16 +68,16 @@ pub fn query_user<W: Writer, R: Buffer>(output: &mut W, input: &mut R,
     for line in input.lines() {
         match parse_line(line.unwrap().as_slice(), &from_regex, &disable_regex, &enable_regex) {
             From(from, to) => {
-                println!("from query");
+                t.output_find_path(from, to, output);
             },
             Disable(station) => {
-                println!("disable query");
+                t.output_disable_station(station, output);
             },
             Enable(station) => {
-                println!("enable query");
+                t.output_enable_station(station, output);
             },
             Invalid => {
-                println!("invalid");
+                output.write_str(INVALID_QUERY);
             }
         }
         output.write_str(PROMPT_STRING);

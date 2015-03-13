@@ -14,7 +14,7 @@ fn main() {
     println!("Hello, world!");
     let mut stdin = BufferedReader::new(io::stdin());
     let mut stdout = io::stdout();
-    let t = T::new();
-    query::query_user(&mut stdout, &mut stdin, &t);
+    let mut t = T::new();
+    query::query_user(&mut stdout, &mut stdin, &mut t);
 }
 
