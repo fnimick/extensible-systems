@@ -3,8 +3,7 @@
 #![plugin(regex_macros)]
 extern crate regex;
 use std::io;
-use std::io::{File, BufferedReader};
-use regex::Regex;
+use std::io::BufferedReader;
 use t::T;
 mod t;
 mod query;
@@ -15,6 +14,7 @@ fn main() {
     let mut stdin = BufferedReader::new(io::stdin());
     let mut stdout = io::stdout();
     let mut t = T::new();
+    t.load();
     query::query_user(&mut stdout, &mut stdin, &mut t);
 }
 

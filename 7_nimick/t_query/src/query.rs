@@ -32,20 +32,20 @@ fn compile_regexes() -> (Regex, Regex, Regex) {
 fn parse_line<'a>(line: &'a str, from_regex: &Regex, disable_regex: &Regex, enable_regex: &Regex) -> Query<'a> {
     match from_regex.captures(line) {
         Some(cap) => {
-            return From(cap.at(0).unwrap().trim(),
-                        cap.at(1).unwrap().trim());
+            return From(cap.at(1).unwrap().trim(),
+                        cap.at(2).unwrap().trim());
         },
         None => {}
     }
     match disable_regex.captures(line) {
         Some(cap) => {
-            return Disable(cap.at(0).unwrap().trim());
+            return Disable(cap.at(1).unwrap().trim());
         },
         None => {}
     }
     match enable_regex.captures(line) {
         Some(cap) => {
-            return Enable(cap.at(0).unwrap().trim());
+            return Enable(cap.at(1).unwrap().trim());
         },
         None => {}
     }
