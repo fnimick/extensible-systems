@@ -1,5 +1,6 @@
 extern crate regex;
 use regex::Regex;
+use std::sync::{Arc, Mutex};
 use t::T;
 use self::Query::{From, Enable, Disable, Invalid};
 //use t::TQueryResult::{TOk, DisambiguateStart, DisambiguateDestination, NoSuchStation, NoSuchPath};
@@ -21,7 +22,6 @@ enum Query<'a> {
     Disable(&'a str),
     Invalid
 }
-
 
 fn compile_regexes() -> (Regex, Regex, Regex) {
     (regex!(r"from ([a-zA-Z ]+) to ([a-zA-Z ]+)"),
@@ -54,8 +54,7 @@ fn parse_line<'a>(line: &'a str, from_regex: &Regex, disable_regex: &Regex, enab
 
 
 #[allow(unused_must_use)]
-pub fn query_user<W: Writer, R: Buffer>(output: &mut W, input: &mut R,
-                                    t: &mut T) {
+pub fn query_user<BS: Writer + Buffer>(stream: &mut BS, t: Arc<Mutex<T>>) {
     let (from_regex, disable_regex, enable_regex) = compile_regexes();
 
     // Why doesn't this work?
@@ -63,25 +62,27 @@ pub fn query_user<W: Writer, R: Buffer>(output: &mut W, input: &mut R,
         parse_line(line.as_slice(), &from_regex, &disable_regex, &enable_regex)
     };*/
 
-    output.write_str(PROMPT_STRING);
-    output.flush();
-    for line in input.lines() {
-        match parse_line(line.unwrap().as_slice(), &from_regex, &disable_regex, &enable_regex) {
+    let mut mbta = t.lock().unwrap();
+
+    stream.write_str(PROMPT_STRING);
+    stream.flush();
+    while let Ok(line) = stream.read_line() {
+        match parse_line(line.as_slice(), &from_regex, &disable_regex, &enable_regex) {
             From(from, to) => {
-                t.output_find_path(from, to, output);
+                mbta.output_find_path(from, to, stream);
             },
             Disable(station) => {
-                t.output_disable_station(station, output);
+                mbta.output_disable_station(station, stream);
             },
             Enable(station) => {
-                t.output_enable_station(station, output);
+                mbta.output_enable_station(station, stream);
             },
             Invalid => {
-                output.write_str(INVALID_QUERY);
+                stream.write_str(INVALID_QUERY);
             }
         }
-        output.write_str(PROMPT_STRING);
-        output.flush();
+        stream.write_str(PROMPT_STRING);
+        stream.flush();
     }
 }
 
