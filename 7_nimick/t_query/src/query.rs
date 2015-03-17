@@ -1,13 +1,9 @@
 extern crate regex;
+
 use regex::Regex;
 use std::sync::{Arc, Mutex};
 use t::T;
 use self::Query::{From, Enable, Disable, Invalid};
-//use t::TQueryResult::{TOk, DisambiguateStart, DisambiguateDestination, NoSuchStation, NoSuchPath};
-//use t::TOperationResult::{Successful, DisambiguateOp, NoSuchStationOp};
-//use t::TStep::{Station, Switch, Ensure};
-
-//mod t;
 
 static PROMPT_STRING: &'static str = "===>>> ";
 static INVALID_QUERY: &'static str = "Invalid command format.\n";
