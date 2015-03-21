@@ -30,6 +30,26 @@ macro_rules! return_some_vec {
     }
 }
 
+macro_rules! string_set {
+    ($( $x:expr ),* ) => {{
+        let mut temp_set = HashSet::new();
+        $(
+            temp_set.insert(String::from_str($x));
+        )*
+        temp_set
+    }};
+}
+
+macro_rules! string_hash {
+    ($( ($x:expr, $y:expr) ),* ) => {{
+        let mut temp_hash = HashMap::new();
+        $(
+            temp_hash.insert(String::from_str($x), $y);
+        )*
+        temp_hash
+    }};
+}
+
 enum TQueryResult<'a> {
     TOk(Vec<TStep>),
     DisambiguateStart(Vec<String>),
@@ -65,7 +85,7 @@ pub struct T<'a> {
 impl<'a> T<'a> {
     pub fn new() -> T<'a> {
         T {
-            tee: "test".to_string(),
+            tee: "mbta".to_string(),
             stations: HashSet::new(),
             disabled: HashSet::new()
         }
@@ -81,10 +101,11 @@ impl<'a> T<'a> {
     fn read_data_file(&mut self, path: &str) {
         let mut reader = open_file(path);
         while let Some(line) = reader.read_line().ok() {
-            if line.starts_with("-") {
+            let l = line.trim();
+            if l.starts_with("-") || l.is_empty() {
                 continue;
             }
-            self.stations.insert(line.trim().to_string());
+            self.stations.insert(l.to_string());
         }
     }
 
@@ -115,28 +136,10 @@ impl<'a> T<'a> {
 
     fn enable_station(&mut self, station: &str) -> TOperationResult {
         self.modify_station(station, true)
-        /*
-        return_some_vec!(self.disambiguate_station(station), DisambiguateOp, NoSuchStationOp);
-        let station_string = station.to_string();
-        if !self.disabled.contains(&station_string) {
-            return Successful;
-        }
-        self.disabled.remove(&station_string);
-        self.rebuild_graph();
-        Successful*/
     }
 
     fn disable_station(&mut self, station: &str) -> TOperationResult {
         self.modify_station(station, false)
-        /*
-        return_some_vec!(self.disambiguate_station(station), DisambiguateOp, NoSuchStationOp);
-        let station_string = station.to_string();
-        if self.disabled.contains(&station_string) {
-            return Successful;
-        }
-        self.disabled.insert(station_string);
-        self.rebuild_graph();
-        Successful*/
     }
 
     fn disambiguate_station(&self, station: &str) -> DisambiguationResult {
@@ -186,6 +189,36 @@ impl<'a> T<'a> {
     }
 }
 
+#[cfg(test)]
+mod t_tests {
+    use super::T;
+    use std::collections::HashSet;
+
+    #[test]
+    fn test_read_data_file() {
+        let mut t = T::new();
+        t.read_data_file("data/red.dat");
+        let expect = string_set![
+            "Alewife Station", "Davis Station", "Porter Square Station",
+            "Harvard Square Station", "Central Square Station",
+            "Kendall Station", "Charles/MGH Station", "Park Street Station",
+            "Downtown Crossing Station", "South Station", "Broadway Station",
+            "Andrew Station", "JFK/UMass Station", "North Quincy Station",
+            "Wollaston Station", "Quincy Center Station",
+            "Quincy Adams Station", "Braintree Station", "Savin Hill Station",
+            "Fields Corner Station", "Shawmut Station", "Ashmont Station",
+            "Cedar Grove Station", "Butler Station", "Milton Station",
+            "Central Avenue Station", "Valley Road Station",
+            "Capen Street Station", "Mattapan Station"
+        ];
+        assert_eq!(expect.len(), t.stations.len());
+        for station in t.stations.iter() {
+            assert!(expect.contains(station));
+        }
+    }
+}
+
+/// Print steps to the output writer
 fn print_steps<W: Writer>(steps: Vec<TStep>, output: &mut W) {
     for step in steps.into_iter() {
         match step {
@@ -196,6 +229,25 @@ fn print_steps<W: Writer>(steps: Vec<TStep>, output: &mut W) {
     }
 }
 
+#[cfg(test)]
+mod print_steps_tests {
+    use super::print_steps;
+    use super::TStep::{Station, Switch, Ensure};
+    use std::io::MemWriter;
+
+    #[test]
+    fn test_print_vec() {
+        let mut w = MemWriter::new();
+        let v = vec![Station("a".to_string(), "b".to_string()),
+            Switch("c".to_string(), "d".to_string()), Ensure("e".to_string())];
+        print_steps(v, &mut w);
+        assert_eq!(w.get_ref(), concat!("a, take b\n",
+                                        "---switch from c to d\n",
+                                        "---ensure you are on e\n").as_bytes());
+    }
+}
+
+/// Print the vector of Strings to the writer, preceeded by the header
 fn print_vec<W: Writer>(header: &str, vec: Vec<String>, output: &mut W) {
     output.write_str(header);
     for station in vec.into_iter() {
@@ -205,10 +257,38 @@ fn print_vec<W: Writer>(header: &str, vec: Vec<String>, output: &mut W) {
     output.write_str("\n");
 }
 
+#[cfg(test)]
+mod print_vec_tests {
+    use super::print_vec;
+    use std::io::MemWriter;
+
+    #[test]
+    fn test_print_vec() {
+        let mut w = MemWriter::new();
+        let v = vec!["a".to_string(), "b".to_string(), "c".to_string()];
+        print_vec("header", v, &mut w);
+        assert_eq!(w.get_ref(), String::from_str("headera b c \n").as_bytes());
+    }
+}
+
+/// Print the header and given str to the writer
 fn print_str<W: Writer>(header: &str, s: &str, output: &mut W) {
     output.write_str(header);
-    output.write_str(s.as_slice());
+    output.write_str(s);
     output.write_str("\n");
+}
+
+#[cfg(test)]
+mod print_str_tests {
+    use super::print_str;
+    use std::io::MemWriter;
+
+    #[test]
+    fn test_print_str() {
+        let mut w = MemWriter::new();
+        print_str("header", "string", &mut w);
+        assert_eq!(w.get_ref(), String::from_str("headerstring\n").as_bytes());
+    }
 }
 
 /// Open the file as given by filename in the form of a Buffered Reader
