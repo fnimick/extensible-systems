@@ -40,16 +40,7 @@ macro_rules! string_set {
     }};
 }
 
-macro_rules! string_hash {
-    ($( ($x:expr, $y:expr) ),* ) => {{
-        let mut temp_hash = HashMap::new();
-        $(
-            temp_hash.insert(String::from_str($x), $y);
-        )*
-        temp_hash
-    }};
-}
-
+#[derive(Show, PartialEq)]
 enum TQueryResult<'a> {
     TOk(Vec<TStep>),
     DisambiguateStart(Vec<String>),
@@ -59,18 +50,24 @@ enum TQueryResult<'a> {
     NoSuchPath
 }
 
+#[derive(Show, PartialEq)]
 enum TOperationResult<'a> {
     Successful,
     DisambiguateOp(Vec<String>),
     NoSuchStationOp
 }
 
+#[derive(Show, PartialEq)]
 enum TStep {
+    // Station, line name
     Station(String, String),
+    // Station, line name
     Switch(String, String),
+    // line name
     Ensure(String)
 }
 
+#[derive(Show, PartialEq)]
 enum DisambiguationResult {
     Station(String),
     Suggestions(Vec<String>)
@@ -113,12 +110,15 @@ impl<'a> T<'a> {
         // TODO rebuild the graph given the current disabled list
     }
 
-    fn find_path(&self, from: &str, to: &str) -> TQueryResult {
+    /// Find a path "from" the start "to" the destination
+    pub fn find_path(&self, from: &str, to: &str) -> TQueryResult {
         let start = return_some_vec!(self.disambiguate_station(from), DisambiguateStart, NoSuchStart);
         let dest = return_some_vec!(self.disambiguate_station(to), DisambiguateDestination, NoSuchDest);
+        // Find the path from the start to the destination, or return NoSuchPath
         NoSuchPath
     }
 
+    /// Modify the given station to set it to be enabled/disabled
     fn modify_station(&mut self, station: &str, enable: bool) -> TOperationResult {
         let station_string = return_some_vec!(self.disambiguate_station(station), DisambiguateOp, NoSuchStationOp);
         println!("Found station: {}", station_string);
@@ -134,18 +134,25 @@ impl<'a> T<'a> {
         Successful
     }
 
-    fn enable_station(&mut self, station: &str) -> TOperationResult {
+    /// Enable the given station. This function is a wrapper for modify_station
+    pub fn enable_station(&mut self, station: &str) -> TOperationResult {
         self.modify_station(station, true)
     }
 
-    fn disable_station(&mut self, station: &str) -> TOperationResult {
+    /// Disable the given station. This function is a wrapper for modify_station
+    pub fn disable_station(&mut self, station: &str) -> TOperationResult {
         self.modify_station(station, false)
     }
 
+    /// Return a suggested station or list of sorted station suggestions if the
+    /// given station is close but not a complete match to an actual station
+    /// (or set of actual stations)
+    ///
+    /// Assumption: 'Close but not a complete match' means that the given
+    ///             string is a substring of an actual station
     fn disambiguate_station(&self, station: &str) -> DisambiguationResult {
-        let station_string = station.to_string();
-        if self.stations.contains(&station_string) {
-            return DisambiguationResult::Station(station_string.clone());
+        if self.stations.contains(station) {
+            return DisambiguationResult::Station(station.to_string());
         }
         let mut ret_vec = Vec::new();
         for maybe_match in self.stations.iter() {
@@ -156,12 +163,15 @@ impl<'a> T<'a> {
         if ret_vec.len() == 1 {
             DisambiguationResult::Station(ret_vec.pop().unwrap())
         } else {
+            ret_vec.sort();
             DisambiguationResult::Suggestions(ret_vec)
         }
     }
 
-    pub fn output_find_path<W: Writer>(&self, from: &str, to: &str, output: &mut W) {
-        match self.find_path(from, to) {
+    /// Print to the output writer the result of calling find_path on the T.
+    pub fn output_find_path<W: Writer>(&self, path: TQueryResult, from: &str,
+                                       to: &str, output: &mut W) {
+        match path {
             TOk(steps) => { print_steps(steps, output); },
             DisambiguateStart(suggestions) => { print_vec(DISAMBIG_START, suggestions, output); },
             DisambiguateDestination(suggestions) => { print_vec(DISAMBIG_DEST, suggestions,
@@ -172,26 +182,39 @@ impl<'a> T<'a> {
         }
     }
 
-    pub fn output_enable_station<W: Writer>(&mut self, station: &str, output: &mut W) {
-        match self.enable_station(station) {
+    /// Output the result of calling enable or disable a station
+    fn output_toperation_result<W: Writer>(&self, result: TOperationResult,
+                                           station: &str, no_such: &str, output: &mut W) {
+        match result {
             Successful => { output.write_str(SUCCESS_OP); },
             DisambiguateOp(suggestions) => { print_vec(DISAMBIG_OP, suggestions, output); },
-            NoSuchStationOp => { print_str(NO_SUCH_ENABLE, station, output); }
+            NoSuchStationOp => { print_str(no_such, station, output); }
         }
     }
 
-    pub fn output_disable_station<W: Writer>(&mut self, station: &str, output: &mut W) {
-        match self.disable_station(station) {
-            Successful => { output.write_str(SUCCESS_OP); },
-            DisambiguateOp(suggestions) => { print_vec(DISAMBIG_OP, suggestions, output); },
-            NoSuchStationOp => { print_str(NO_SUCH_DISABLE, station, output); }
-        }
+    /// Print to the output writer the result of enabling the given station
+    pub fn output_enable_station<W: Writer>(&self, station: &str,
+                                            enabled: TOperationResult, output: &mut W) {
+        self.output_toperation_result(enabled, station, NO_SUCH_ENABLE, output)
+    }
+
+    /// Print to the output writer the result of disabling the given station
+    pub fn output_disable_station<W: Writer>(&mut self, station: &str,
+                                             disabled: TOperationResult, output: &mut W) {
+        self.output_toperation_result(disabled, station, NO_SUCH_DISABLE, output)
     }
 }
 
 #[cfg(test)]
 mod t_tests {
     use super::T;
+    use super::{TOperationResult, TQueryResult, DisambiguationResult};
+    use super::{NO_SUCH_ENABLE, NO_SUCH_DISABLE, SUCCESS_OP, DISAMBIG_OP, DISAMBIG_START,
+                DISAMBIG_DEST, NO_SUCH_START, NO_SUCH_DEST, NO_SUCH_PATH};
+    use super::TOperationResult::{Successful, DisambiguateOp, NoSuchStationOp};
+    use super::TQueryResult::{TOk, DisambiguateStart, DisambiguateDestination, NoSuchStart, NoSuchDest, NoSuchPath};
+    use super::TStep::{Station, Switch, Ensure};
+    use std::io::MemWriter;
     use std::collections::HashSet;
 
     #[test]
@@ -215,6 +238,134 @@ mod t_tests {
         for station in t.stations.iter() {
             assert!(expect.contains(station));
         }
+    }
+
+    #[test]
+    fn test_rebuild_graph() {}
+
+    // TODO: Come back to this
+    fn test_find_path() {
+        let expect1 = TOk(vec![Station("South Station".to_string(),
+                                      "red".to_string()),
+                              Station("Broadway Station".to_string(),
+                                      "red".to_string()),
+                              Station("Andrew Station".to_string(),
+                                      "red".to_string())]);
+        run_find_path_test("South Station", "Andrew Station", expect1);
+
+        let expect2 = DisambiguateStart(vec!["South Station".to_string(),
+                                             "South Street Station".to_string()]);
+        run_find_path_test("South", "Andrew Station", expect2);
+        run_find_path_test("asdf", "Downtown Crossing Station", NoSuchStart);
+
+        let expect3 = DisambiguateDestination(vec!["Andrew Station".to_string()]);
+        run_find_path_test("South Station", "Andrew", expect3);
+        run_find_path_test("Downtown Crossing Station", "asdf", NoSuchDest);
+
+        let mut t = T::new();
+        t.load();
+        t.modify_station("Kendall Station", false);
+        assert_eq!(t.find_path("Alewife Station", "Braintree Station"), NoSuchPath);
+    }
+
+    fn run_find_path_test(start: &str, end: &str, expect: TQueryResult) {
+        let mut t = T::new();
+        t.load();
+        let result = t.find_path(start, end);
+        assert_eq!(result, expect);
+    }
+
+    #[test]
+    fn test_modify_station() {
+        let station = "South Station";
+        let mut t = T::new();
+        t.load();
+        assert!(!t.disabled.contains(station));
+        t.modify_station(station, false);
+        assert!(t.disabled.contains(station));
+        t.modify_station(station, true);
+        assert!(!t.disabled.contains(station));
+        t.disable_station(station);
+        t.disable_station(station);
+        assert!(t.disabled.contains(station));
+        t.enable_station(station);
+        t.enable_station(station);
+        assert!(!t.disabled.contains(station));
+    }
+
+    #[test]
+    fn test_disambiguate_station() {
+        let mut t = T::new();
+        t.load();
+        assert_eq!(t.disambiguate_station("Andrew Station"),
+                   DisambiguationResult::Station("Andrew Station".to_string()));
+        assert_eq!(t.disambiguate_station("Andrew"),
+                   DisambiguationResult::Station("Andrew Station".to_string()));
+
+        let expect = string_set!["Tufts Medical Center Station",
+                                 "Quincy Center Station",
+                                 "Malden Center Station",
+                                 "Government Center Station",
+                                 "Hynes Convention Center"];
+        let suggestions = match t.disambiguate_station("Center") {
+            DisambiguationResult::Suggestions(stations) => stations,
+            DisambiguationResult::Station(station) => panic!("Bang!")
+        };
+        for station in suggestions.iter() {
+            assert!(expect.contains(station));
+        }
+    }
+
+    #[test]
+    fn test_output_toperation_result() {
+        run_test_output_toperation("Andrew Station", false, SUCCESS_OP);
+        run_test_output_toperation("South", false,
+                                   format!("{}{}{}{}", DISAMBIG_OP,
+                                           "South Station ",
+                                           "South Street Station ",
+                                           "\n").as_slice());
+        run_test_output_toperation("asdf", false,
+                                   format!("{}{}", NO_SUCH_DISABLE, "asdf\n").as_slice());
+        run_test_output_toperation("asdf", true,
+                                   format!("{}{}", NO_SUCH_ENABLE, "asdf\n").as_slice());
+    }
+
+    /// Test the output of enabling or disabling a station
+    fn run_test_output_toperation(station: &str, enable: bool, expect: &str) {
+        let mut w = MemWriter::new();
+        let mut t = T::new();
+        t.load();
+
+        let result: TOperationResult;
+        if enable {
+            result = t.enable_station(station);
+            t.output_enable_station(station, result, &mut w);
+        } else {
+            result = t.disable_station(station);
+            t.output_disable_station(station, result, &mut w);
+        }
+
+        assert_eq!(expect, String::from_utf8(w.into_inner()).unwrap());
+    }
+
+    // TODO: Come back to this
+    fn test_output_find_path() {
+        let mut t = T::new();
+        t.load();
+
+        let (from, to) = ("South Station", "Andrew Station");
+        let expect = concat!("South Station, take red\n",
+                             "Broadway Station, take red\n",
+                             "Andrew Station, take red\n");
+        run_test_output_find_path(&t, t.find_path(from, to), from, to, expect);
+    }
+
+    /// Test the output of finding a path
+    fn run_test_output_find_path(t: &T, path: TQueryResult,
+                                 from: &str, to: &str, expect: &str) {
+        let mut w = MemWriter::new();
+        t.output_find_path(path, from, to, &mut w);
+        assert_eq!(expect, String::from_utf8(w.into_inner()).unwrap());
     }
 }
 
@@ -248,6 +399,7 @@ mod print_steps_tests {
 }
 
 /// Print the vector of Strings to the writer, preceeded by the header
+#[allow(unused_must_use)]
 fn print_vec<W: Writer>(header: &str, vec: Vec<String>, output: &mut W) {
     output.write_str(header);
     for station in vec.into_iter() {
@@ -272,6 +424,7 @@ mod print_vec_tests {
 }
 
 /// Print the header and given str to the writer
+#[allow(unused_must_use)]
 fn print_str<W: Writer>(header: &str, s: &str, output: &mut W) {
     output.write_str(header);
     output.write_str(s);

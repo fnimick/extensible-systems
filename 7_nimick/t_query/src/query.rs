@@ -65,13 +65,16 @@ pub fn query_user<BS: Writer + Buffer>(stream: &mut BS, t: Arc<Mutex<T>>) {
     while let Ok(line) = stream.read_line() {
         match parse_line(line.as_slice(), &from_regex, &disable_regex, &enable_regex) {
             From(from, to) => {
-                mbta.output_find_path(from, to, stream);
+                let path = mbta.find_path(from, to);
+                mbta.output_find_path(path, from, to, stream);
             },
             Disable(station) => {
-                mbta.output_disable_station(station, stream);
+                let disabled = mbta.disable_station(station);
+                mbta.output_disable_station(station, disabled, stream);
             },
             Enable(station) => {
-                mbta.output_enable_station(station, stream);
+                let enabled = mbta.enable_station(station);
+                mbta.output_enable_station(station, enabled, stream);
             },
             Invalid => {
                 stream.write_str(INVALID_QUERY);
