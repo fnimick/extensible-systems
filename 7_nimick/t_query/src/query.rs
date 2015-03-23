@@ -53,7 +53,7 @@ fn parse_line<'a>(line: &'a str, from_regex: &Regex, disable_regex: &Regex, enab
 pub fn query_user<BS: Writer + Buffer>(stream: &mut BS, t: Arc<Mutex<T>>) {
     let (from_regex, disable_regex, enable_regex) = compile_regexes();
 
-    // Why doesn't this work?
+    // How can we make this work?
     /*let parse_line_ = |&: line: String| -> Query {
         parse_line(line.as_slice(), &from_regex, &disable_regex, &enable_regex)
     };*/
