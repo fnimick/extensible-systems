@@ -16,10 +16,20 @@ static BIND_ADDR: &'static str = "127.0.0.1:12345";
 
 mod t;
 mod query;
+mod graph;
+
+
+
+//ASSUMPTIONS: don't print when passing through a disabled station
+//
+//
+// TODOS
+// fix: file purpose statements
+// fix: disable St. Mary
+// fix: from or to a disabled station crashes
 
 #[cfg(not(test))]
 fn main() {
-    println!("Hello, world!");
     let mut t = T::new();
     t.load();
     serve_forever(t);

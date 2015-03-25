@@ -2,9 +2,10 @@ use self::TQueryResult::{TOk, DisambiguateStart, DisambiguateDestination, NoSuch
 use self::TOperationResult::{Successful, DisambiguateOp, NoSuchStationOp};
 use self::TStep::{Station, Switch, Ensure};
 use std::fmt::{write, Arguments};
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use std::io::BufferedReader;
 use std::io::fs::File;
+use graph::{Node, LabeledGraph};
 
 static DISAMBIG_START: &'static str = "disambiguate your start: ";
 static DISAMBIG_DEST: &'static str = "disambiguate your destination: ";
@@ -15,6 +16,9 @@ static NO_SUCH_DEST: &'static str = "no such destination: ";
 static NO_SUCH_DISABLE: &'static str = "no such station to disable: ";
 static NO_SUCH_ENABLE: &'static str = "no such station to enable: ";
 static NO_SUCH_PATH: &'static str = "No path exists.\n";
+static EXCESSIVE_DISABLING_MESSAGE: &'static str = "You've disabled too many things, aborting!";
+// how many stations is a transfer equivalent in cost to?
+static TRANSFER_COST: Option<usize> = Some(2);
 
 macro_rules! return_some_vec {
     ($res:expr, $wrapper:expr, $empty:expr) => {
@@ -73,17 +77,22 @@ enum DisambiguationResult {
     Suggestions(Vec<String>)
 }
 
+#[derive(Show)]
 pub struct T<'a> {
-    tee: String,
-    stations: HashSet<String>,
+    graph: LabeledGraph,
+    source_data: HashMap<String, Vec<String>>, // line -> list of stations
+    connections: HashSet<(String, String, Option<String>)>,
+    stations: HashMap<String, Vec<Node>>, // station name -> list of station nodes
     disabled: HashSet<String>
 }
 
 impl<'a> T<'a> {
     pub fn new() -> T<'a> {
         T {
-            tee: "mbta".to_string(),
-            stations: HashSet::new(),
+            graph: LabeledGraph::new(),
+            source_data: HashMap::new(),
+            connections: HashSet::new(),
+            stations: HashMap::new(),
             disabled: HashSet::new()
         }
     }
@@ -93,29 +102,117 @@ impl<'a> T<'a> {
         self.read_data_file("data/green.dat");
         self.read_data_file("data/red.dat");
         self.read_data_file("data/orange.dat");
+        self.read_connections("data/connections.dat");
+        self.rebuild_graph();
     }
 
     fn read_data_file(&mut self, path: &str) {
         let mut reader = open_file(path);
+        let mut rail_line = String::new();
         while let Some(line) = reader.read_line().ok() {
-            let l = line.trim();
-            if l.starts_with("-") || l.is_empty() {
+            if line.starts_with("-") {
+                rail_line = line.trim_left_matches('-').trim().to_string();
+                self.source_data.insert(rail_line.clone(), Vec::new());
                 continue;
             }
-            self.stations.insert(l.to_string());
+            let station_name = line.trim().to_string();
+            self.source_data.get_mut(&rail_line).unwrap().push(station_name);
         }
     }
 
+    fn read_connections(&mut self, path: &str) {
+        let mut reader = open_file(path);
+        while let Some(line) = reader.read_line().ok() {
+            let mut line_split = line.split(',');
+            let one = line_split.next().unwrap().trim().to_string();
+            let two = line_split.next().unwrap().trim().to_string();
+            let three = match line_split.next() {
+                Some(s) => Some(s.trim().to_string()),
+                None => None
+            };
+            self.connections.insert((one, two, three));
+        }
+    }
+
+    // Rebuilds the graph from source data, taking into account
+    // the current disabled station list
     fn rebuild_graph(&mut self) {
-        // TODO rebuild the graph given the current disabled list
+        self.stations = HashMap::new();
+        self.graph = LabeledGraph::new();
+        for (rail_line, station_vec) in self.source_data.iter() {
+            let mut prev_node: Option<Node> = None;
+            for station_name in station_vec.iter() {
+                if self.disabled.contains(station_name) {
+                    continue;
+                }
+                let this_node = Node {
+                    station: station_name.clone(),
+                    line: rail_line.clone()
+                };
+                if !self.stations.contains_key(station_name) {
+                    self.stations.insert(station_name.clone(), Vec::new());
+                }
+                let mut node_vec = self.stations.get_mut(station_name).unwrap();
+                for existing_node in node_vec.iter() {
+                    self.graph.add_edge(existing_node, &this_node, TRANSFER_COST);
+                }
+                node_vec.push(this_node.clone());
+                match prev_node {
+                    Some(n) => {
+                        self.graph.add_edge(&n, &this_node, None);
+                    },
+                    None => {}
+                };
+                prev_node = Some(this_node)
+            }
+        }
+        for &(ref line_one_name, ref line_two_name, ref fallback) in self.connections.iter() {
+            let line_one = self.source_data.get(line_one_name).unwrap();
+            let station_one = match line_one.iter().filter(|&: station| {
+                !self.disabled.contains(*station)
+            }).next() {
+                Some(s) => s,
+                None => { return; }
+            };
+            let line_two = self.source_data.get(line_two_name).unwrap();
+            let station_two = match line_two.iter().rev().filter(|&: station| {
+                !self.disabled.contains(*station)
+            }).next() {
+                Some(s) => s,
+                None => {
+                    let fallback_line = self.source_data.get(&fallback.clone().unwrap()).unwrap();
+                    match fallback_line.iter().rev().filter(|&: station| {
+                        !self.disabled.contains(*station)
+                    }).next() {
+                        Some(s) => s,
+                        None => { return; }
+                    }
+                }
+            };
+            let node_vec_one = self.stations.get(station_one).unwrap();
+            let node_vec_two = self.stations.get(station_two).unwrap();
+            assert!(!node_vec_one.is_empty());
+            assert!(!node_vec_two.is_empty());
+            for node_one in node_vec_one.iter() {
+                for node_two in node_vec_two.iter() {
+                    self.graph.add_edge(node_one, node_two, TRANSFER_COST);
+                }
+            }
+        }
     }
 
     /// Find a path "from" the start "to" the destination
-    pub fn find_path(&self, from: &str, to: &str) -> TQueryResult {
-        let start = return_some_vec!(self.disambiguate_station(from), DisambiguateStart, NoSuchStart);
-        let dest = return_some_vec!(self.disambiguate_station(to), DisambiguateDestination, NoSuchDest);
-        // Find the path from the start to the destination, or return NoSuchPath
-        NoSuchPath
+    pub fn find_path(&self, start: &str, dest: &str) -> TQueryResult {
+        let start = return_some_vec!(self.disambiguate_station(start), DisambiguateStart, NoSuchStart);
+        let dest = return_some_vec!(self.disambiguate_station(dest), DisambiguateDestination, NoSuchDest);
+        let ref start_node = self.stations.get(&start).unwrap()[0];
+        let ref dest_node = self.stations.get(&dest).unwrap()[0];
+        match self.graph.find_shortest_path(start_node, dest_node) {
+            Some(path) => {
+                TOk(interpret_path(path))
+            },
+            None => NoSuchPath
+        }
     }
 
     /// Modify the given station to set it to be enabled/disabled
@@ -151,11 +248,9 @@ impl<'a> T<'a> {
     /// Assumption: 'Close but not a complete match' means that the given
     ///             string is a substring of an actual station
     fn disambiguate_station(&self, station: &str) -> DisambiguationResult {
-        if self.stations.contains(station) {
-            return DisambiguationResult::Station(station.to_string());
-        }
+        let station_string = station.to_string();
         let mut ret_vec = Vec::new();
-        for maybe_match in self.stations.iter() {
+        for maybe_match in self.stations.keys().chain(self.disabled.iter()) {
             if maybe_match.contains(station) {
                 ret_vec.push(maybe_match.clone());
             }
@@ -367,6 +462,53 @@ mod t_tests {
         t.output_find_path(path, from, to, &mut w);
         assert_eq!(expect, String::from_utf8(w.into_inner()).unwrap());
     }
+}
+
+// invariant: path.len() must be > 0
+fn interpret_path(path: Vec<Node>) -> Vec<TStep> {
+    if path.len() == 1 {
+        return Vec::new();
+    }
+
+    let mut path_iter = path.into_iter();
+    let mut result_vec = Vec::new();
+    let mut first_node = path_iter.next().unwrap();
+    let mut prev_node = path_iter.next().unwrap();
+    process_first_nodes(&mut result_vec, first_node, prev_node.clone());
+    for node in path_iter {
+        process_nodes(&mut result_vec, prev_node, node.clone());
+        prev_node = node;
+    }
+    prune_end(&mut result_vec);
+    result_vec
+}
+
+// returns TSteps associated with a transition between two given nodes
+fn process_nodes(steps: &mut Vec<TStep>, prev_node: Node, node: Node) {
+    if prev_node.line != node.line && prev_node.station != node.station {
+        steps.push(Ensure(node.line.clone()));
+        steps.push(Station(node.station, node.line));
+    } else if prev_node.line != node.line {
+        steps.push(Switch(prev_node.line, node.line));
+    } else {
+        steps.push(Station(node.station, node.line));
+    }
+}
+
+fn process_first_nodes(steps: &mut Vec<TStep>, prev_node: Node, node: Node) {
+    if prev_node.station == node.station {
+        steps.push(Station(node.station, node.line));
+        return;
+    }
+    steps.push(Station(prev_node.station.clone(), prev_node.line.clone()));
+    process_nodes(steps, prev_node, node);
+}
+
+fn prune_end(steps: &mut Vec<TStep>) {
+    match steps.pop().unwrap() {
+        Station(station, line) => { steps.push(Station(station, line)); },
+        _ => {}
+    };
 }
 
 /// Print steps to the output writer
