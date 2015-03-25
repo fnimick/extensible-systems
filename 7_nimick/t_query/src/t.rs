@@ -7,8 +7,8 @@
     the T structure to find paths between two stations in the system.
 "]
 
-
-use self::TQueryResult::{TOk, DisambiguateStart, DisambiguateDestination, NoSuchStart, NoSuchDest, DisabledStart, DisabledDest, NoSuchPath};
+use self::TQueryResult::{TOk, DisambiguateStart, DisambiguateDestination,
+    NoSuchStart, NoSuchDest, DisabledStart, DisabledDest, NoSuchPath};
 use self::TOperationResult::{Successful, DisambiguateOp, NoSuchStationOp};
 use self::TStep::{Station, Switch, Ensure};
 use std::fmt::{write, Arguments};
@@ -92,14 +92,29 @@ enum DisambiguationResult {
 #[derive(Show)]
 pub struct T<'a> {
     graph: LabeledGraph,
-    source_data: HashMap<String, Vec<String>>, // line -> list of stations
+
+    // Used to reconstruct the T when stations are disabled/enabled
+    // line -> list of stations
+    source_data: HashMap<String, Vec<String>>,
+
     // set of connections between lines used to reconstruct the graph
     connections: HashSet<(String, String, Option<String>)>,
-    stations: HashMap<String, Vec<Node>>, // station name -> list of station nodes
+
+    // station name -> list of station nodes that represent the station
+    // Stations have 1 or more nodes depending on how many lines connect
+    // at the station
+    stations: HashMap<String, Vec<Node>>,
+
+    // Set of disabled stations
     disabled: HashSet<String>
 }
 
+////////////////////////////////////////////////////////////////////////////
+//                              Methods                                   //
+////////////////////////////////////////////////////////////////////////////
+
 impl<'a> T<'a> {
+    /// Create a new T instance
     pub fn new() -> T<'a> {
         T {
             graph: LabeledGraph::new(),
@@ -110,6 +125,7 @@ impl<'a> T<'a> {
         }
     }
 
+    /// Load the T information from the data files
     pub fn load(&mut self) {
         self.read_data_file("data/blue.dat");
         self.read_data_file("data/green.dat");
@@ -119,6 +135,7 @@ impl<'a> T<'a> {
         self.rebuild_graph();
     }
 
+    /// Load a specific data file into the T
     fn read_data_file(&mut self, path: &str) {
         let mut reader = open_file(path);
         let mut rail_line = String::new();
@@ -135,6 +152,7 @@ impl<'a> T<'a> {
         }
     }
 
+    /// Load a connections file into the T
     fn read_connections(&mut self, path: &str) {
         let mut reader = open_file(path);
         while let Some(line) = reader.read_line().ok() {
@@ -149,52 +167,81 @@ impl<'a> T<'a> {
         }
     }
 
-    // Rebuilds the graph from source data, taking into account
-    // the current disabled station list
+    /// Rebuilds the graph from source data, taking into account
+    /// the current disabled station list
     fn rebuild_graph(&mut self) {
         self.stations = HashMap::new();
         self.graph = LabeledGraph::new();
+        self.rebuild_lines();
+        self.rebuild_connections();
+    }
+
+    /// Reconstruct the lines of the T (red, blue, green, orange)
+    /// Helper function for rebuild_graph
+    fn rebuild_lines(&mut self) {
         for (rail_line, station_vec) in self.source_data.iter() {
             let mut prev_node: Option<Node> = None;
             for station_name in station_vec.iter() {
+                // Don't add disabled stations
                 if self.disabled.contains(station_name) {
                     continue;
                 }
+
+                // Node representing the current station
                 let this_node = Node {
                     station: station_name.clone(),
                     line: rail_line.clone()
                 };
+
+                // If it's not already in the list of stations, add it
                 if !self.stations.contains_key(station_name) {
                     self.stations.insert(station_name.clone(), Vec::new());
                 }
+
+                // Connect node instances for different lines at the same station
+                // using the correct transfer cost
                 let mut node_vec = self.stations.get_mut(station_name).unwrap();
                 for existing_node in node_vec.iter() {
-                    self.graph.add_edge(existing_node, &this_node, TRANSFER_COST);
+                    self.graph.add_edge(existing_node, &this_node, TRANSFER_COST, false);
                 }
                 node_vec.push(this_node.clone());
                 match prev_node {
                     Some(n) => {
-                        self.graph.add_edge(&n, &this_node, None);
+                        self.graph.add_edge(&n, &this_node, None, false);
                     },
                     None => {}
                 };
                 prev_node = Some(this_node)
             }
         }
+    }
+
+    /// Rebuild the connections between lines of a particular color
+    /// Necessary for the green and red lines
+    fn rebuild_connections(&mut self) {
         for &(ref line_one_name, ref line_two_name, ref fallback) in self.connections.iter() {
+            // Find the first non-disabled station in line 1
             let line_one = self.source_data.get(line_one_name).unwrap();
             let station_one = match line_one.iter().filter(|&: station| {
                 !self.disabled.contains(*station)
             }).next() {
                 Some(s) => s,
-                None => { return; }
+                None => {
+                    // If line 1 has no stations, we don't have a connection to make
+                    // ex) if all of the E line is disabled
+                    return;
+                }
             };
+
+            // Find the first non-disabled station in line 2
             let line_two = self.source_data.get(line_two_name).unwrap();
             let station_two = match line_two.iter().rev().filter(|&: station| {
                 !self.disabled.contains(*station)
             }).next() {
                 Some(s) => s,
                 None => {
+                    // If line 2 has no stations, fall back to the optional third line
+                    // Disable all B C D, you must connect B to green
                     let fallback_line = self.source_data.get(&fallback.clone().unwrap()).unwrap();
                     match fallback_line.iter().rev().filter(|&: station| {
                         !self.disabled.contains(*station)
@@ -204,13 +251,16 @@ impl<'a> T<'a> {
                     }
                 }
             };
+
+            // For the case where we must connect directly to a transfer
+            // station due to excess disabling
             let node_vec_one = self.stations.get(station_one).unwrap();
             let node_vec_two = self.stations.get(station_two).unwrap();
             assert!(!node_vec_one.is_empty());
             assert!(!node_vec_two.is_empty());
             for node_one in node_vec_one.iter() {
                 for node_two in node_vec_two.iter() {
-                    self.graph.add_edge(node_one, node_two, TRANSFER_COST);
+                    self.graph.add_edge(node_one, node_two, TRANSFER_COST, false);
                 }
             }
         }
@@ -405,8 +455,9 @@ mod t_tests {
     }
 }
 
-// invariant: path.len() must be > 0
+/// Interpret the path of Nodes as a list of TSteps
 fn interpret_path(path: Vec<Node>) -> Vec<TStep> {
+    // invariant: path.len() must be > 0
     assert!(path.len() > 0);
     if path.len() == 1 {
         return Vec::new();
@@ -425,7 +476,7 @@ fn interpret_path(path: Vec<Node>) -> Vec<TStep> {
     result_vec
 }
 
-// returns TSteps associated with a transition between two given nodes
+/// returns TSteps associated with a transition between two given nodes
 fn process_nodes(steps: &mut Vec<TStep>, prev_node: Node, node: Node) {
     if prev_node.line != node.line && prev_node.station != node.station {
         steps.push(Ensure(node.line.clone()));
@@ -437,6 +488,8 @@ fn process_nodes(steps: &mut Vec<TStep>, prev_node: Node, node: Node) {
     }
 }
 
+/// Ensure that the first "direction" does not include a Switch
+/// or Ensure (due to non-deterministic starting nodes at a transfer station)
 fn process_first_nodes(steps: &mut Vec<TStep>, prev_node: Node, node: Node) {
     if prev_node.station == node.station {
         steps.push(Station(node.station, node.line));
@@ -446,6 +499,8 @@ fn process_first_nodes(steps: &mut Vec<TStep>, prev_node: Node, node: Node) {
     process_nodes(steps, prev_node, node);
 }
 
+/// Ensure that the last "direction" does not include a Switch
+/// or Ensure (due to non-deterministic ending nodes at a transfer station)
 fn prune_end(steps: &mut Vec<TStep>) {
     match steps.pop().unwrap() {
         Station(station, line) => { steps.push(Station(station, line)); },

@@ -57,13 +57,15 @@ impl Graph {
     }
 
     /// Edge addition
-    fn add_edge(&mut self, source: usize, target: usize, weight: Option<usize>) {
+    fn add_edge(&mut self, source: usize, target: usize, weight: Option<usize>, directed: bool) {
         let weight = weight.unwrap_or(1);
         // checks to make sure that these nodes exist
         assert!(source < self.edges.len());
         assert!(target < self.edges.len());
         self.edges[source].push(Edge { node: target, cost: weight });
-        self.edges[target].push(Edge { node: source, cost: weight });
+        if !directed {
+            self.edges[target].push(Edge { node: source, cost: weight });
+        }
     }
 
     /// Uses Dijkstra's algorithm to find the shortest path from the
@@ -199,12 +201,12 @@ impl LabeledGraph {
 
     /// Adds an edge from source label to target label
     /// Adds the associated nodes if they do not already exist
-    pub fn add_edge(&mut self, source: &Node, target: &Node, weight: Option<usize>) {
+    pub fn add_edge(&mut self, source: &Node, target: &Node, weight: Option<usize>, directed: bool) {
         self.add_node_if_not_exists(source);
         self.add_node_if_not_exists(target);
         let source_idx = *self.labels.get(source).unwrap();
         let target_idx = *self.labels.get(target).unwrap();
-        self.graph.add_edge(source_idx, target_idx, weight);
+        self.graph.add_edge(source_idx, target_idx, weight, directed);
     }
 
     /// Finds the shortest path in a LabeledGraph
