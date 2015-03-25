@@ -22,6 +22,14 @@ macro_rules! regex (
     ($s:expr) => (regex::Regex::new($s).unwrap());
     );
 
+#[derive(Show, PartialEq, Eq)]
+enum Query<'a> {
+    From(&'a str, &'a str),
+    Enable(&'a str),
+    Disable(&'a str),
+    Invalid
+}
+
 struct Parser {
     from_regex: regex::Regex,
     disable_regex: regex::Regex,
@@ -53,7 +61,20 @@ impl Parser {
         }
         Invalid
     }
+}
 
+#[cfg(test)]
+mod parser_tests {
+    use super::{compile_regexes, Parser};
+    use super::Query::{From, Disable, Enable};
+
+    #[test]
+    fn test_parse_line() {
+        let p = compile_regexes();
+        assert_eq!(From("South", "Ruggles"), p.parse_line("from South to Ruggles"));
+        assert_eq!(Disable("Ruggles"), p.parse_line("disable Ruggles"));
+        assert_eq!(Enable("Ruggles"), p.parse_line("enable Ruggles"));
+    }
 }
 
 /// Create the parser
@@ -63,13 +84,6 @@ fn compile_regexes() -> Parser {
         disable_regex: regex!(r"disable ([a-zA-Z ]+)"),
         enable_regex: regex!(r"enable ([a-zA-Z ]+)")
     }
-}
-
-enum Query<'a> {
-    From(&'a str, &'a str),
-    Enable(&'a str),
-    Disable(&'a str),
-    Invalid
 }
 
 #[allow(unused_must_use)]

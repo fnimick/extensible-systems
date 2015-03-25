@@ -1,3 +1,4 @@
+use t::T;
 use t::TStep;
 use t::TQueryResult;
 use t::TOperationResult;
@@ -37,6 +38,9 @@ pub fn output_find_path<W: Writer>(path: TQueryResult, from: &str,
 #[cfg(test)]
 mod output_find_path_tests {
     use super::output_find_path;
+    use std::io::MemWriter;
+    use t::TQueryResult;
+    use t::T;
 
     #[test]
     fn test_output_find_path() {
@@ -54,7 +58,7 @@ mod output_find_path_tests {
     fn run_test_output_find_path(t: &T, path: TQueryResult,
                                  from: &str, to: &str, expect: &str) {
         let mut w = MemWriter::new();
-        t.output_find_path(path, from, to, &mut w);
+        output_find_path(path, from, to, &mut w);
         assert_eq!(expect, String::from_utf8(w.into_inner()).unwrap());
     }
 }
@@ -71,7 +75,10 @@ fn output_toperation_result<W: Writer>(result: TOperationResult,
 
 #[cfg(test)]
 mod output_toperation_result_tests {
-    use super::output_toperation_result;
+    use t::T;
+    use t::TOperationResult;
+    use std::io::MemWriter;
+    use super::{output_enable_station, output_disable_station, output_toperation_result};
     use super::{NO_SUCH_ENABLE, NO_SUCH_DISABLE, SUCCESS_OP, DISAMBIG_OP, DISAMBIG_START,
                 DISAMBIG_DEST, NO_SUCH_START, NO_SUCH_DEST, NO_SUCH_PATH};
 
@@ -98,10 +105,10 @@ mod output_toperation_result_tests {
         let result: TOperationResult;
         if enable {
             result = t.enable_station(station);
-            t.output_enable_station(station, result, &mut w);
+            output_enable_station(station, result, &mut w);
         } else {
             result = t.disable_station(station);
-            t.output_disable_station(station, result, &mut w);
+            output_disable_station(station, result, &mut w);
         }
 
         assert_eq!(expect, String::from_utf8(w.into_inner()).unwrap());
@@ -136,7 +143,7 @@ fn print_steps<W: Writer>(steps: Vec<TStep>, output: &mut W) {
 #[cfg(test)]
 mod print_steps_tests {
     use super::print_steps;
-    use super::TStep::{Station, Switch, Ensure};
+    use t::TStep::{Station, Switch, Ensure};
     use std::io::MemWriter;
 
     #[test]
