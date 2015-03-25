@@ -1,3 +1,13 @@
+#[doc="
+    Module: Graph
+
+    This module contains the LabeledGraph code. This is a general structure which is used
+    by the MBTA struture defined in the T module. It exposes operations such as
+    find_shortest_path which allows an external client to find a path through the
+    graph, as well as add_edge to create the graph structure.
+"]
+
+
 use std::collections::{BitvSet, BinaryHeap, HashMap};
 use std::usize;
 use std::cmp::Ordering;

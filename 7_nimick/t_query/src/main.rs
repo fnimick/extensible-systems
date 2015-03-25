@@ -18,9 +18,7 @@ mod t;
 mod query;
 mod graph;
 
-
-
-//ASSUMPTIONS: don't print when passing through a disabled station
+// ASSUMPTIONS: don't print when passing through a disabled station
 //
 //
 // TODOS

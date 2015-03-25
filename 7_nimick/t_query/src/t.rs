@@ -1,3 +1,13 @@
+#[doc="
+    Module: T
+
+    This module contains the code specifically related to the MBTA, which is a
+    very specialized graph. It exposes operations on the T structure that allow
+    an external user to modify the T (enable/disable stations), as well as use
+    the T structure to find paths between two stations in the system.
+"]
+
+
 use self::TQueryResult::{TOk, DisambiguateStart, DisambiguateDestination, NoSuchStart, NoSuchDest, DisabledStart, DisabledDest, NoSuchPath};
 use self::TOperationResult::{Successful, DisambiguateOp, NoSuchStationOp};
 use self::TStep::{Station, Switch, Ensure};

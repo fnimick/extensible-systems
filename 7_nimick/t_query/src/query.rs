@@ -1,3 +1,11 @@
+#[doc="
+    Module: Query
+
+    This module handles the user's queries on the MBTA structure. It handles
+    all interaction with the user, including parsing.
+"]
+
+
 extern crate regex;
 
 use regex::Regex;
