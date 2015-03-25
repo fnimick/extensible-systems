@@ -8,7 +8,7 @@
 "]
 
 
-use std::collections::{BitvSet, BinaryHeap, HashMap};
+use std::collections::{BinaryHeap, HashMap};
 use std::usize;
 use std::cmp::Ordering;
 
@@ -36,7 +36,6 @@ struct Edge {
 
 // Graph in adjacency list representation
 // edges[index] represents the adjacency list for node # index
-// BitvSet is used to ensure that we don't create duplicate edges
 #[derive(Show, Eq, PartialEq, PartialOrd)]
 struct Graph {
     edges: Vec<Vec<Edge>>,
@@ -115,8 +114,6 @@ impl Graph {
 #[cfg(test)]
 mod graph_test {
     use super::Graph;
-    use std::collections::BitvSet;
-    use std::collections::bitv::Bitv;
 
     #[test]
     fn test_add_node() {
@@ -145,7 +142,7 @@ mod graph_test {
         let mut g = Graph::new();
         g.add_node();
         g.add_node();
-        g.add_edge(1, 2, None);
+        g.add_edge(1, 2, None, false);
     }
 
     #[test]
@@ -155,10 +152,10 @@ mod graph_test {
         g.add_node();
         g.add_node();
         g.add_node();
-        g.add_edge(0, 1, None);
-        g.add_edge(1, 2, None);
-        g.add_edge(0, 2, Some(4));
-        g.add_edge(2, 3, None);
+        g.add_edge(0, 1, None, false);
+        g.add_edge(1, 2, None, false);
+        g.add_edge(0, 2, Some(4), false);
+        g.add_edge(2, 3, None, false);
         //assert_eq!(g.find_shortest_path(0, 1).unwrap().len(), 2);
         //assert_eq!(g.find_shortest_path(1, 2).unwrap().len(), 2);
         assert_eq!(g.find_shortest_path(0, 2).unwrap().len(), 3);

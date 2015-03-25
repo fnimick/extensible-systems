@@ -1,14 +1,14 @@
 #![allow(unstable)]
-#![feature(plugin)]
-#![plugin(regex_macros)]
 extern crate regex;
 
-use std::io;
-use std::io::BufferedReader;
+#[cfg(not(test))]
 use std::io::{TcpListener, Listener, Acceptor, BufferedStream};
+#[cfg(not(test))]
 use std::sync::{Arc, Mutex};
 
+#[cfg(not(test))]
 use t::T;
+#[cfg(not(test))]
 use query::query_user;
 
 #[cfg(not(test))]
@@ -38,7 +38,7 @@ fn main() {
 fn serve_forever(t: T) {
     use std::thread::Thread;
 
-    let mut mbta = Arc::new(Mutex::new(t));
+    let mbta = Arc::new(Mutex::new(t));
 
     let listener = TcpListener::bind(BIND_ADDR).unwrap();
     let mut acceptor = listener.listen().unwrap();

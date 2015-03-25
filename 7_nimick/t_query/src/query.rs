@@ -8,14 +8,21 @@
 
 extern crate regex;
 
-use regex::Regex;
+#[cfg(not(test))]
 use std::sync::{Arc, Mutex};
+#[cfg(not(test))]
 use t::T;
-use self::Query::{From, Enable, Disable, Invalid};
+#[cfg(not(test))]
 use print;
+#[cfg(not(test))]
 use print::{output_find_path, output_enable_station, output_disable_station};
 
+use regex::Regex;
+use self::Query::{From, Enable, Disable, Invalid};
+
+#[cfg(not(test))]
 static PROMPT_STRING: &'static str = "===>>> ";
+#[cfg(not(test))]
 static INVALID_QUERY: &'static str = "Invalid command format.\n";
 
 macro_rules! regex (
@@ -65,7 +72,7 @@ impl Parser {
 
 #[cfg(test)]
 mod parser_tests {
-    use super::{compile_regexes, Parser};
+    use super::compile_regexes;
     use super::Query::{From, Disable, Enable};
 
     #[test]
@@ -87,6 +94,7 @@ fn compile_regexes() -> Parser {
 }
 
 #[allow(unused_must_use)]
+#[cfg(not(test))]
 /// The interface through which the user interacts with the T structure
 /// query_user asks the user for a command/operation, and then
 /// executes it and prints the response back to the stream

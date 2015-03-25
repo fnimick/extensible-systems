@@ -11,7 +11,6 @@ use self::TQueryResult::{TOk, DisambiguateStart, DisambiguateDestination,
     NoSuchStart, NoSuchDest, DisabledStart, DisabledDest, NoSuchPath};
 use self::TOperationResult::{Successful, DisambiguateOp, NoSuchStationOp};
 use self::TStep::{Station, Switch, Ensure};
-use std::fmt::{write, Arguments};
 use std::collections::{HashSet, HashMap};
 use std::io::BufferedReader;
 use std::io::fs::File;
@@ -318,7 +317,6 @@ impl<'a> T<'a> {
     /// Assumption: 'Close but not a complete match' means that the given
     ///             string is a substring of an actual station
     fn disambiguate_station(&self, station: &str) -> DisambiguationResult {
-        let station_string = station.to_string();
         let mut ret_vec = Vec::new();
         for maybe_match in self.stations.keys().chain(self.disabled.iter()) {
             if maybe_match.contains(station) {
@@ -337,12 +335,10 @@ impl<'a> T<'a> {
 #[cfg(test)]
 mod t_tests {
     use super::T;
-    use super::{TOperationResult, TQueryResult, DisambiguationResult};
-    use super::TOperationResult::{Successful, DisambiguateOp, NoSuchStationOp};
+    use super::{TQueryResult, DisambiguationResult};
     use super::TQueryResult::{TOk, DisambiguateStart, DisambiguateDestination, NoSuchStart, NoSuchDest, NoSuchPath};
-    use super::TStep::{Station, Switch, Ensure};
-    use std::io::MemWriter;
-    use std::collections::{HashMap, HashSet};
+    use super::TStep::Station;
+    use std::collections::HashSet;
 
     #[test]
     fn test_read_data_file() {
@@ -447,7 +443,7 @@ mod t_tests {
                                  "Hynes Convention Center"];
         let suggestions = match t.disambiguate_station("Center") {
             DisambiguationResult::Suggestions(stations) => stations,
-            DisambiguationResult::Station(station) => panic!("Bang!")
+            DisambiguationResult::Station(..) => panic!("Bang!")
         };
         for station in suggestions.iter() {
             assert!(expect.contains(station.as_slice()));
@@ -465,7 +461,7 @@ fn interpret_path(path: Vec<Node>) -> Vec<TStep> {
 
     let mut path_iter = path.into_iter();
     let mut result_vec = Vec::new();
-    let mut first_node = path_iter.next().unwrap();
+    let first_node = path_iter.next().unwrap();
     let mut prev_node = path_iter.next().unwrap();
     process_first_nodes(&mut result_vec, first_node, prev_node.clone());
     for node in path_iter {

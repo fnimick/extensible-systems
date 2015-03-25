@@ -6,7 +6,6 @@
 "]
 
 
-use t::T;
 use t::TStep;
 use t::TQueryResult;
 use t::TOperationResult;
@@ -25,8 +24,9 @@ static DISABLED_DEST: &'static str = "disabled destination: ";
 static NO_SUCH_DISABLE: &'static str = "no such station to disable: ";
 static NO_SUCH_ENABLE: &'static str = "no such station to enable: ";
 static NO_SUCH_PATH: &'static str = "No path exists.\n";
-static EXCESSIVE_DISABLING_MESSAGE: &'static str = "You've disabled too many things, aborting!";
+//static EXCESSIVE_DISABLING_MESSAGE: &'static str = "You've disabled too many things, aborting!";
 
+#[allow(unused_must_use)]
 /// Print to the output writer the result of calling find_path on the T.
 pub fn output_find_path<W: Writer>(path: TQueryResult, from: &str,
                                    to: &str, output: &mut W) {
@@ -59,11 +59,11 @@ mod output_find_path_tests {
         let expect = concat!("South Station, take red\n",
                              "Broadway Station, take red\n",
                              "Andrew Station, take red\n");
-        run_test_output_find_path(&t, t.find_path(from, to), from, to, expect);
+        run_test_output_find_path(t.find_path(from, to), from, to, expect);
     }
 
     /// Test the output of finding a path
-    fn run_test_output_find_path(t: &T, path: TQueryResult,
+    fn run_test_output_find_path(path: TQueryResult,
                                  from: &str, to: &str, expect: &str) {
         let mut w = MemWriter::new();
         output_find_path(path, from, to, &mut w);
@@ -71,6 +71,7 @@ mod output_find_path_tests {
     }
 }
 
+#[allow(unused_must_use)]
 /// Output the result of calling enable or disable a station
 fn output_toperation_result<W: Writer>(result: TOperationResult,
                                        station: &str, no_such: &str, output: &mut W) {
@@ -86,9 +87,9 @@ mod output_toperation_result_tests {
     use t::T;
     use t::TOperationResult;
     use std::io::MemWriter;
-    use super::{output_enable_station, output_disable_station, output_toperation_result};
-    use super::{NO_SUCH_ENABLE, NO_SUCH_DISABLE, SUCCESS_OP, DISAMBIG_OP, DISAMBIG_START,
-                DISAMBIG_DEST, NO_SUCH_START, NO_SUCH_DEST, NO_SUCH_PATH};
+    use super::{output_enable_station, output_disable_station};
+    use super::{NO_SUCH_ENABLE, NO_SUCH_DISABLE, SUCCESS_OP, DISAMBIG_OP};
+    //use super::{DISAMBIG_START, DISAMBIG_DEST, NO_SUCH_START, NO_SUCH_DEST, NO_SUCH_PATH};
 
     #[test]
     fn test_output_toperation_result() {
@@ -137,6 +138,7 @@ pub fn output_disable_station<W: Writer>(station: &str,
     output_toperation_result(disabled, station, NO_SUCH_DISABLE, output)
 }
 
+#[allow(unused_must_use)]
 /// Print steps to the output writer
 fn print_steps<W: Writer>(steps: Vec<TStep>, output: &mut W) {
     for step in steps.into_iter() {
