@@ -1,4 +1,4 @@
-use self::TQueryResult::{TOk, DisambiguateStart, DisambiguateDestination, NoSuchStart, NoSuchDest, NoSuchPath};
+use self::TQueryResult::{TOk, DisambiguateStart, DisambiguateDestination, NoSuchStart, NoSuchDest, DisabledStart, DisabledDest, NoSuchPath};
 use self::TOperationResult::{Successful, DisambiguateOp, NoSuchStationOp};
 use self::TStep::{Station, Switch, Ensure};
 use std::fmt::{write, Arguments};
@@ -13,6 +13,8 @@ static DISAMBIG_OP: &'static str = "disambiguate your target: ";
 static SUCCESS_OP: &'static str = "done\n";
 static NO_SUCH_START: &'static str = "no such start: ";
 static NO_SUCH_DEST: &'static str = "no such destination: ";
+static DISABLED_START: &'static str = "disabled start: ";
+static DISABLED_DEST: &'static str = "disabled destination: ";
 static NO_SUCH_DISABLE: &'static str = "no such station to disable: ";
 static NO_SUCH_ENABLE: &'static str = "no such station to enable: ";
 static NO_SUCH_PATH: &'static str = "No path exists.\n";
@@ -51,6 +53,8 @@ enum TQueryResult<'a> {
     DisambiguateDestination(Vec<String>),
     NoSuchStart,
     NoSuchDest,
+    DisabledStart(String),
+    DisabledDest(String),
     NoSuchPath
 }
 
@@ -205,8 +209,14 @@ impl<'a> T<'a> {
     pub fn find_path(&self, start: &str, dest: &str) -> TQueryResult {
         let start = return_some_vec!(self.disambiguate_station(start), DisambiguateStart, NoSuchStart);
         let dest = return_some_vec!(self.disambiguate_station(dest), DisambiguateDestination, NoSuchDest);
-        let ref start_node = self.stations.get(&start).unwrap()[0];
-        let ref dest_node = self.stations.get(&dest).unwrap()[0];
+        let start_node = match self.stations.get(&start) {
+            Some(v) => &v[0],
+            None => { return DisabledStart(start); }
+        };
+        let dest_node = match self.stations.get(&dest) {
+            Some(v) => &v[0],
+            None => { return DisabledDest(dest); }
+        };
         match self.graph.find_shortest_path(start_node, dest_node) {
             Some(path) => {
                 TOk(interpret_path(path))
@@ -218,7 +228,6 @@ impl<'a> T<'a> {
     /// Modify the given station to set it to be enabled/disabled
     fn modify_station(&mut self, station: &str, enable: bool) -> TOperationResult {
         let station_string = return_some_vec!(self.disambiguate_station(station), DisambiguateOp, NoSuchStationOp);
-        println!("Found station: {}", station_string);
         if enable ^ self.disabled.contains(&station_string) {
             return Successful;
         }
@@ -273,6 +282,8 @@ impl<'a> T<'a> {
                                                                 output); },
             NoSuchStart => { print_str(NO_SUCH_START, from, output); },
             NoSuchDest => { print_str(NO_SUCH_DEST, to, output); },
+            DisabledStart(s) => { print_str(DISABLED_START, s.as_slice(), output); },
+            DisabledDest(s) => { print_str(DISABLED_DEST, s.as_slice(), output); },
             NoSuchPath => { output.write_str(NO_SUCH_PATH); }
         }
     }
