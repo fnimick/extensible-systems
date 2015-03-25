@@ -241,7 +241,14 @@ impl<'a> T<'a> {
                 None => {
                     // If line 2 has no stations, fall back to the optional third line
                     // Disable all B C D, you must connect B to green
-                    let fallback_line = self.source_data.get(&fallback.clone().unwrap()).unwrap();
+                    let fback = match fallback {
+                        &Some(ref f) => f.clone(),
+                        &None => { return; }
+                    };
+                    let fallback_line = match self.source_data.get(&fback) {
+                        Some(line) => line,
+                        None => { return; }
+                    };
                     match fallback_line.iter().rev().filter(|&: station| {
                         !self.disabled.contains(*station)
                     }).next() {
@@ -368,8 +375,61 @@ mod t_tests {
         assert_eq!(count, expect.len());
     }
 
+
     #[test]
-    fn test_rebuild_graph() {}
+    fn test_read_connections() {
+        let mut t = T::new();
+        t.read_connections("data/connections.dat");
+
+        macro_rules! set {
+            ($( ($x:expr, $y:expr, $z:expr) ),* ) => {{
+                let mut temp_set = HashSet::new();
+                $(
+                    temp_set.insert(($x.to_string(), $y.to_string(), $z));
+                )*
+                temp_set
+            }};
+        }
+
+        let expect = set![("E", "green", None),
+                          ("B C D", "green", None),
+                          ("B", "B C D", Some("green".to_string())),
+                          ("C", "B C D", Some("green".to_string())),
+                          ("D", "B C D", Some("green".to_string())),
+                          ("Braintree", "red", None),
+                          ("Mattapan", "red", None)];
+        for connection in t.connections.iter() {
+            assert!(expect.contains(connection));
+        }
+    }
+
+    #[test]
+    fn test_rebuild_graph() {
+        let mut t = T::new();
+        t.load(); // load calls rebuild graph
+
+        assert_eq!(t.stations.len(), 120);
+
+        // disable_station calls rebuild_graph each time
+        let mut to_disable = vec![];
+        match t.source_data.get("red") {
+            Some(stations) => {
+                for station in stations.iter() {
+                    to_disable.push(station.to_string());
+                }
+            },
+            None => panic!("Bang")
+        }
+
+        let mut count = 0;
+        for station in to_disable.iter() {
+            t.disable_station(station.as_slice());
+            count += 1;
+        }
+        println!("done");
+
+        assert_eq!(t.stations.len(), 120 - count);
+    }
 
     #[test]
     fn test_find_path() {
