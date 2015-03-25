@@ -85,6 +85,7 @@ enum DisambiguationResult {
 pub struct T<'a> {
     graph: LabeledGraph,
     source_data: HashMap<String, Vec<String>>, // line -> list of stations
+    // set of connections between lines used to reconstruct the graph
     connections: HashSet<(String, String, Option<String>)>,
     stations: HashMap<String, Vec<Node>>, // station name -> list of station nodes
     disabled: HashSet<String>
@@ -120,7 +121,9 @@ impl<'a> T<'a> {
                 continue;
             }
             let station_name = line.trim().to_string();
-            self.source_data.get_mut(&rail_line).unwrap().push(station_name);
+            if !station_name.is_empty() {
+                self.source_data.get_mut(&rail_line).unwrap().push(station_name);
+            }
         }
     }
 
@@ -205,7 +208,7 @@ impl<'a> T<'a> {
         }
     }
 
-    /// Find a path "from" the start "to" the destination
+    /// Find a path from the start to the destination
     pub fn find_path(&self, start: &str, dest: &str) -> TQueryResult {
         let start = return_some_vec!(self.disambiguate_station(start), DisambiguateStart, NoSuchStart);
         let dest = return_some_vec!(self.disambiguate_station(dest), DisambiguateDestination, NoSuchDest);
@@ -321,7 +324,7 @@ mod t_tests {
     use super::TQueryResult::{TOk, DisambiguateStart, DisambiguateDestination, NoSuchStart, NoSuchDest, NoSuchPath};
     use super::TStep::{Station, Switch, Ensure};
     use std::io::MemWriter;
-    use std::collections::HashSet;
+    use std::collections::{HashMap, HashSet};
 
     #[test]
     fn test_read_data_file() {
@@ -340,16 +343,21 @@ mod t_tests {
             "Central Avenue Station", "Valley Road Station",
             "Capen Street Station", "Mattapan Station"
         ];
-        assert_eq!(expect.len(), t.stations.len());
-        for station in t.stations.iter() {
+        let mut stations = t.source_data.get("Braintree").unwrap().iter().chain(
+            t.source_data.get("Mattapan").unwrap().iter()).chain(
+            t.source_data.get("red").unwrap().iter());
+        let mut count: usize = 0;
+        for station in stations {
             assert!(expect.contains(station));
+            count += 1;
         }
+        assert_eq!(count, expect.len());
     }
 
     #[test]
     fn test_rebuild_graph() {}
 
-    // TODO: Come back to this
+    #[test]
     fn test_find_path() {
         let expect1 = TOk(vec![Station("South Station".to_string(),
                                       "red".to_string()),
@@ -364,14 +372,20 @@ mod t_tests {
         run_find_path_test("South", "Andrew Station", expect2);
         run_find_path_test("asdf", "Downtown Crossing Station", NoSuchStart);
 
-        let expect3 = DisambiguateDestination(vec!["Andrew Station".to_string()]);
-        run_find_path_test("South Station", "Andrew", expect3);
+        //let expect3 = DisambiguateDestination(vec!["Andrew Station".to_string()]);
+        let expect3 = DisambiguateDestination(vec!["Government Center Station".to_string(),
+                                                   "Hynes Convention Center".to_string(),
+                                                   "Malden Center Station".to_string(),
+                                                   "Quincy Center Station".to_string(),
+                                                   "Tufts Medical Center Station".to_string()]);
+        run_find_path_test("South Station", "Center", expect3);
         run_find_path_test("Downtown Crossing Station", "asdf", NoSuchDest);
 
         let mut t = T::new();
         t.load();
-        t.modify_station("Kendall Station", false);
-        assert_eq!(t.find_path("Alewife Station", "Braintree Station"), NoSuchPath);
+        t.disable_station("Park Street Station");
+        t.disable_station("Downtown Crossing Station");
+        assert_eq!(t.find_path("Alewife Station", "Ruggles Station"), NoSuchPath);
     }
 
     fn run_find_path_test(start: &str, end: &str, expect: TQueryResult) {
@@ -418,7 +432,7 @@ mod t_tests {
             DisambiguationResult::Station(station) => panic!("Bang!")
         };
         for station in suggestions.iter() {
-            assert!(expect.contains(station));
+            assert!(expect.contains(station.as_slice()));
         }
     }
 
@@ -477,6 +491,7 @@ mod t_tests {
 
 // invariant: path.len() must be > 0
 fn interpret_path(path: Vec<Node>) -> Vec<TStep> {
+    assert!(path.len() > 0);
     if path.len() == 1 {
         return Vec::new();
     }
