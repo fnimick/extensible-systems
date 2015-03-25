@@ -26,7 +26,6 @@ mod graph;
 // TODOS
 // fix: file purpose statements
 // fix: disable St. Mary
-// fix: from or to a disabled station crashes
 
 #[cfg(not(test))]
 fn main() {
