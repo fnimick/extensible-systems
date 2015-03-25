@@ -187,7 +187,7 @@ impl<'a> T<'a> {
                     continue;
                 }
 
-                // Node representing the current station
+                // Node representing the current station and line
                 let this_node = Node {
                     station: station_name.clone(),
                     line: rail_line.clone()

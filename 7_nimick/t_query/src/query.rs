@@ -80,9 +80,9 @@ mod parser_tests {
 /// Create the parser
 fn compile_regexes() -> Parser {
     Parser {
-        from_regex: regex!(r"from ([a-zA-Z ]+) to ([a-zA-Z ]+)"),
-        disable_regex: regex!(r"disable ([a-zA-Z ]+)"),
-        enable_regex: regex!(r"enable ([a-zA-Z ]+)")
+        from_regex: regex!(r"from ([a-zA-Z\. ]+) to ([a-zA-Z\. ]+)"),
+        disable_regex: regex!(r"disable ([a-zA-Z\. ]+)"),
+        enable_regex: regex!(r"enable ([a-zA-Z\. ]+)")
     }
 }
 
