@@ -446,7 +446,6 @@ mod t_tests {
         run_find_path_test("South", "Andrew Station", expect2);
         run_find_path_test("asdf", "Downtown Crossing Station", NoSuchStart);
 
-        //let expect3 = DisambiguateDestination(vec!["Andrew Station".to_string()]);
         let expect3 = DisambiguateDestination(vec!["Government Center Station".to_string(),
                                                    "Hynes Convention Center".to_string(),
                                                    "Malden Center Station".to_string(),
