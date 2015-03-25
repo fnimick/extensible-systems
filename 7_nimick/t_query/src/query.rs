@@ -20,6 +20,49 @@ macro_rules! regex (
     ($s:expr) => (regex::Regex::new($s).unwrap());
     );
 
+struct Parser {
+    from_regex: regex::Regex,
+    disable_regex: regex::Regex,
+    enable_regex: regex::Regex
+}
+
+impl Parser {
+
+    /// Parse the given user input to return a Query
+    fn parse_line<'a>(&self, line: &'a str) -> Query<'a> {
+        match self.from_regex.captures(line) {
+            Some(cap) => {
+                return From(cap.at(1).unwrap().trim(),
+                            cap.at(2).unwrap().trim());
+            },
+            None => {}
+        }
+        match self.disable_regex.captures(line) {
+            Some(cap) => {
+                return Disable(cap.at(1).unwrap().trim());
+            },
+            None => {}
+        }
+        match self.enable_regex.captures(line) {
+            Some(cap) => {
+                return Enable(cap.at(1).unwrap().trim());
+            },
+            None => {}
+        }
+        Invalid
+    }
+
+}
+
+/// Create the parser
+fn compile_regexes() -> Parser {
+    Parser {
+        from_regex: regex!(r"from ([a-zA-Z ]+) to ([a-zA-Z ]+)"),
+        disable_regex: regex!(r"disable ([a-zA-Z ]+)"),
+        enable_regex: regex!(r"enable ([a-zA-Z ]+)")
+    }
+}
+
 enum Query<'a> {
     From(&'a str, &'a str),
     Enable(&'a str),
@@ -27,51 +70,18 @@ enum Query<'a> {
     Invalid
 }
 
-fn compile_regexes() -> (Regex, Regex, Regex) {
-    (regex!(r"from ([a-zA-Z ]+) to ([a-zA-Z ]+)"),
-     regex!(r"disable ([a-zA-Z ]+)"),
-     regex!(r"enable ([a-zA-Z ]+)"))
-}
-
-fn parse_line<'a>(line: &'a str, from_regex: &Regex, disable_regex: &Regex, enable_regex: &Regex) -> Query<'a> {
-    match from_regex.captures(line) {
-        Some(cap) => {
-            return From(cap.at(1).unwrap().trim(),
-                        cap.at(2).unwrap().trim());
-        },
-        None => {}
-    }
-    match disable_regex.captures(line) {
-        Some(cap) => {
-            return Disable(cap.at(1).unwrap().trim());
-        },
-        None => {}
-    }
-    match enable_regex.captures(line) {
-        Some(cap) => {
-            return Enable(cap.at(1).unwrap().trim());
-        },
-        None => {}
-    }
-    Invalid
-}
-
-
 #[allow(unused_must_use)]
+/// The interface through which the user interacts with the T structure
+/// query_user asks the user for a command/operation, and then
+/// executes it and prints the response back to the stream
 pub fn query_user<BS: Writer + Buffer>(stream: &mut BS, t: Arc<Mutex<T>>) {
-    let (from_regex, disable_regex, enable_regex) = compile_regexes();
-
-    // How can we make this work?
-    /*let parse_line_ = |&: line: String| -> Query {
-        parse_line(line.as_slice(), &from_regex, &disable_regex, &enable_regex)
-    };*/
-
+    let parser = compile_regexes();
     let mut mbta = t.lock().unwrap();
 
     stream.write_str(PROMPT_STRING);
     stream.flush();
     while let Ok(line) = stream.read_line() {
-        match parse_line(line.as_slice(), &from_regex, &disable_regex, &enable_regex) {
+        match parser.parse_line(line.as_slice()) {
             From(from, to) => {
                 let path = mbta.find_path(from, to);
                 mbta.output_find_path(path, from, to, stream);
