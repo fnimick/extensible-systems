@@ -1,3 +1,11 @@
+#[doc="
+    Module: print
+
+    This module is used to output the results of doing operations
+    on the T structure
+"]
+
+
 use t::T;
 use t::TStep;
 use t::TQueryResult;
