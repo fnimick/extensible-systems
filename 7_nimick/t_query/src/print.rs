@@ -109,12 +109,14 @@ mod output_toperation_result_tests {
 }
 
 /// Print to the output writer the result of enabling the given station
+/// Simple wrapper for output_toperation_result
 pub fn output_enable_station<W: Writer>(station: &str,
                                         enabled: TOperationResult, output: &mut W) {
     output_toperation_result(enabled, station, NO_SUCH_ENABLE, output)
 }
 
 /// Print to the output writer the result of disabling the given station
+/// Simple wrapper for output_toperation_result
 pub fn output_disable_station<W: Writer>(station: &str,
                                          disabled: TOperationResult, output: &mut W) {
     output_toperation_result(disabled, station, NO_SUCH_DISABLE, output)
@@ -149,8 +151,8 @@ mod print_steps_tests {
     }
 }
 
-/// Print the vector of Strings to the writer, preceeded by the header
 #[allow(unused_must_use)]
+/// Print the vector of Strings to the writer, preceeded by the header
 fn print_vec<W: Writer>(header: &str, vec: Vec<String>, output: &mut W) {
     output.write_str(header);
     for station in vec.into_iter() {
@@ -174,8 +176,8 @@ mod print_vec_tests {
     }
 }
 
-/// Print the header and given str to the writer
 #[allow(unused_must_use)]
+/// Print the header and given str to the writer
 fn print_str<W: Writer>(header: &str, s: &str, output: &mut W) {
     output.write_str(header);
     output.write_str(s);
