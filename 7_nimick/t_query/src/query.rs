@@ -12,6 +12,8 @@ use regex::Regex;
 use std::sync::{Arc, Mutex};
 use t::T;
 use self::Query::{From, Enable, Disable, Invalid};
+use print;
+use print::{output_find_path, output_enable_station, output_disable_station};
 
 static PROMPT_STRING: &'static str = "===>>> ";
 static INVALID_QUERY: &'static str = "Invalid command format.\n";
@@ -84,15 +86,15 @@ pub fn query_user<BS: Writer + Buffer>(stream: &mut BS, t: Arc<Mutex<T>>) {
         match parser.parse_line(line.as_slice()) {
             From(from, to) => {
                 let path = mbta.find_path(from, to);
-                mbta.output_find_path(path, from, to, stream);
+                print::output_find_path(path, from, to, stream);
             },
             Disable(station) => {
                 let disabled = mbta.disable_station(station);
-                mbta.output_disable_station(station, disabled, stream);
+                print::output_disable_station(station, disabled, stream);
             },
             Enable(station) => {
                 let enabled = mbta.enable_station(station);
-                mbta.output_enable_station(station, enabled, stream);
+                print::output_enable_station(station, enabled, stream);
             },
             Invalid => {
                 stream.write_str(INVALID_QUERY);

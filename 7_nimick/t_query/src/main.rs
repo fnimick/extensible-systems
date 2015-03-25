@@ -17,6 +17,7 @@ static BIND_ADDR: &'static str = "127.0.0.1:12345";
 mod t;
 mod query;
 mod graph;
+mod print;
 
 // ASSUMPTIONS: don't print when passing through a disabled station
 //
