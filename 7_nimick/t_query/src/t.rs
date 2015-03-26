@@ -18,6 +18,9 @@ use graph::{Node, LabeledGraph};
 
 // how many stations is a transfer equivalent in cost to?
 static TRANSFER_COST: Option<usize> = Some(2);
+static NO_COST: Option<usize> = Some(0);
+static START_NODE_LABEL: &'static str = "start_node";
+static END_NODE_LABEL: &'static str = "end_node";
 
 ////////////////////////////////////////////////////////////////////////////
 //                              Macros                                    //
@@ -102,6 +105,9 @@ pub struct T<'a> {
     // station name -> list of station nodes that represent the station
     // Stations have 1 or more nodes depending on how many lines connect
     // at the station
+    // If a station has more than one node, the second to last node is
+    // the 'entrance' node used for unbiased starts of queries, and the
+    // last node is the 'exit' node used for unbiased destinations.
     stations: HashMap<String, Vec<Node>>,
 
     // Set of disabled stations
@@ -173,6 +179,7 @@ impl<'a> T<'a> {
         self.graph = LabeledGraph::new();
         self.rebuild_lines();
         self.rebuild_connections();
+        self.add_unbiased_nodes();
     }
 
     /// Reconstruct the lines of the T (red, blue, green, orange)
@@ -266,8 +273,35 @@ impl<'a> T<'a> {
             assert!(!node_vec_two.is_empty());
             for node_one in node_vec_one.iter() {
                 for node_two in node_vec_two.iter() {
+                    // doesn't matter that we pay the transfer cost here in all cases,
+                    // because there is no alternative path to a branch line that avoids
+                    // this terminal station connection to the main line
                     self.graph.add_edge(node_one, node_two, TRANSFER_COST, false);
                 }
+            }
+        }
+    }
+
+
+    /// Creates the unbiased nodes used for starting or ending a trip
+    /// at a transfer station.
+    pub fn add_unbiased_nodes(&mut self) {
+        for (station, ref mut node_vec) in self.stations.iter_mut() {
+            if node_vec.len() > 1 {
+                let start_node = Node {
+                    station: station.clone(),
+                    line: START_NODE_LABEL.to_string()
+                };
+                let end_node = Node {
+                    station: station.clone(),
+                    line: END_NODE_LABEL.to_string()
+                };
+                for node in node_vec.iter() {
+                    self.graph.add_edge(&start_node, node, NO_COST, true);
+                    self.graph.add_edge(node, &end_node, NO_COST, true);
+                }
+                node_vec.push(start_node);
+                node_vec.push(end_node);
             }
         }
     }
@@ -277,11 +311,23 @@ impl<'a> T<'a> {
         let start = return_some_vec!(self.disambiguate_station(start), DisambiguateStart, NoSuchStart);
         let dest = return_some_vec!(self.disambiguate_station(dest), DisambiguateDestination, NoSuchDest);
         let start_node = match self.stations.get(&start) {
-            Some(v) => &v[0],
+            Some(v) => {
+                if v.len() == 1 {
+                    &v[0]
+                } else {
+                    &v[v.len() - 2]
+                }
+            },
             None => { return DisabledStart(start); }
         };
         let dest_node = match self.stations.get(&dest) {
-            Some(v) => &v[0],
+            Some(v) => {
+                if v.len() == 1 {
+                    &v[0]
+                } else {
+                    &v[v.len() - 1]
+                }
+            },
             None => { return DisabledDest(dest); }
         };
         match self.graph.find_shortest_path(start_node, dest_node) {
