@@ -21,6 +21,10 @@ static TRANSFER_COST: Option<usize> = Some(2);
 static NO_COST: Option<usize> = Some(0);
 static START_NODE_LABEL: &'static str = "start_node";
 static END_NODE_LABEL: &'static str = "end_node";
+static START_NODE_POS: usize = 2;
+static END_NODE_POS: usize = 1;
+
+// TODO: don't need to Ensure going inbound
 
 ////////////////////////////////////////////////////////////////////////////
 //                              Macros                                    //
@@ -38,6 +42,25 @@ macro_rules! return_some_vec {
         }
     }
 }
+
+// If a station has > 1 node, it has minimum 4 nodes
+// since we always add a start and end node to the end of
+// the list of nodes
+macro_rules! get_node_from_vec {
+    ($t:expr, $node:expr, $node_pos_if_multiple:expr, $empty_return:expr) => {
+        match $t.stations.get(&$node) {
+            Some(v) => {
+                if v.len() == 1 {
+                    &v[0]
+                } else {
+                    &v[v.len() - $node_pos_if_multiple]
+                }
+            },
+            None => { return $empty_return($node); }
+        }
+    }
+}
+
 
 macro_rules! string_set {
     ($( $x:expr ),* ) => {{
@@ -309,31 +332,8 @@ impl<'a> T<'a> {
     pub fn find_path(&self, start: &str, dest: &str) -> TQueryResult {
         let start = return_some_vec!(self.disambiguate_station(start), DisambiguateStart, NoSuchStart);
         let dest = return_some_vec!(self.disambiguate_station(dest), DisambiguateDestination, NoSuchDest);
-        let start_node = match self.stations.get(&start) {
-            Some(v) => {
-                if v.len() == 1 {
-                    &v[0]
-                } else {
-                    // If a station has > 1 node, it has minimum 4 nodes
-                    // since we always add a start and end node to the end of
-                    // the list of nodes
-                    &v[v.len() - 2]
-                }
-            },
-            None => { return DisabledStart(start); }
-        };
-        let dest_node = match self.stations.get(&dest) {
-            Some(v) => {
-                if v.len() == 1 {
-                    &v[0]
-                } else {
-                    // If a station has > 1 node, the last node
-                    // of the list is the end node
-                    &v[v.len() - 1]
-                }
-            },
-            None => { return DisabledDest(dest); }
-        };
+        let start_node = get_node_from_vec!(self, start, START_NODE_POS, DisabledStart);
+        let dest_node = get_node_from_vec!(self, dest, END_NODE_POS, DisabledDest);
         match self.graph.find_shortest_path(start_node, dest_node) {
             Some(path) => {
                 TOk(interpret_path(path))
