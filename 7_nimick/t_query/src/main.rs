@@ -1,4 +1,10 @@
 #![allow(unstable)]
+#[doc="
+    Module: main
+
+    This module contains the code to load the T data structure and start the
+    server that listens for and handles user queries.
+"]
 extern crate regex;
 
 #[cfg(not(test))]
@@ -20,11 +26,6 @@ mod graph;
 mod print;
 
 // ASSUMPTIONS: don't print when passing through a disabled station
-//
-//
-// TODOS
-// fix: file purpose statements
-// fix: disable St. Mary
 
 #[cfg(not(test))]
 fn main() {
