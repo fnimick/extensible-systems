@@ -282,7 +282,6 @@ impl<'a> T<'a> {
         }
     }
 
-
     /// Creates the unbiased nodes used for starting or ending a trip
     /// at a transfer station.
     pub fn add_unbiased_nodes(&mut self) {
@@ -553,6 +552,42 @@ mod t_tests {
         for station in suggestions.iter() {
             assert!(expect.contains(station.as_slice()));
         }
+    }
+
+    #[test]
+    fn test_add_unbiased_nodes() {
+        use std::collections::HashMap;
+        use graph::Node;
+
+        let mut t = T::new();
+
+        macro_rules! string_map {
+            ($( ($x:expr, $y:expr) ),* ) => {{
+                let mut temp = HashMap::new();
+                $(
+                    temp.insert(String::from_str($x), $y);
+                )*
+                temp
+            }};
+        }
+
+        let station_map = string_map![("A", vec![Node {
+            station: "A".to_string(),
+            line: "red".to_string()
+        }]), ("B", vec![Node {
+            station: "B".to_string(),
+            line: "red".to_string()
+        }, Node {
+            station: "B".to_string(),
+            line: "green".to_string()
+        }])];
+
+        t.stations = station_map;
+        assert_eq!(t.stations.get("A").unwrap().len(), 1);
+        assert_eq!(t.stations.get("B").unwrap().len(), 2);
+        t.add_unbiased_nodes();
+        assert_eq!(t.stations.get("A").unwrap().len(), 1);
+        assert_eq!(t.stations.get("B").unwrap().len(), 4);
     }
 }
 
