@@ -314,6 +314,9 @@ impl<'a> T<'a> {
                 if v.len() == 1 {
                     &v[0]
                 } else {
+                    // If a station has > 1 node, it has minimum 4 nodes
+                    // since we always add a start and end node to the end of
+                    // the list of nodes
                     &v[v.len() - 2]
                 }
             },
@@ -324,6 +327,8 @@ impl<'a> T<'a> {
                 if v.len() == 1 {
                     &v[0]
                 } else {
+                    // If a station has > 1 node, the last node
+                    // of the list is the end node
                     &v[v.len() - 1]
                 }
             },
