@@ -531,6 +531,44 @@ fn interpret_path(path: Vec<Node>) -> Vec<TStep> {
     result_vec
 }
 
+#[cfg(test)]
+mod interpret_path_tests {
+    use super::interpret_path;
+    use graph::Node;
+    use super::TStep::{Station, Switch, Ensure};
+
+    #[test]
+    fn test_interpret_path() {
+        let mut path = vec![Node {
+            station: "Downtown Crossing Station".to_string(),
+            line: "orange".to_string()
+        }];
+        assert_eq!(interpret_path(path.clone()), vec![]);
+        path.push(Node {
+            station: "Ruggles Station".to_string(),
+            line: "orange".to_string()
+        });
+        let mut expect = vec![Station("Downtown Crossing Station".to_string(),
+                                      "orange".to_string()),
+                              Station("Ruggles Station".to_string(),
+                                      "orange".to_string())];
+        assert_eq!(interpret_path(path.clone()), expect);
+        path.push(Node {
+            station: "Ruggles Station".to_string(),
+            line: "blue".to_string()
+        });
+        assert_eq!(interpret_path(path.clone()), expect);
+        path.push(Node {
+            station: "State Station".to_string(),
+            line: "C".to_string()
+        });
+        expect.push(Switch("orange".to_string(), "blue".to_string()));
+        expect.push(Ensure("C".to_string()));
+        expect.push(Station("State Station".to_string(), "C".to_string()));
+        assert_eq!(interpret_path(path.clone()), expect);
+    }
+}
+
 /// returns TSteps associated with a transition between two given nodes
 fn process_nodes(steps: &mut Vec<TStep>, prev_node: Node, node: Node) {
     if prev_node.line != node.line && prev_node.station != node.station {
