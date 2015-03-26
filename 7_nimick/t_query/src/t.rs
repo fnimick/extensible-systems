@@ -570,6 +570,7 @@ mod interpret_path_tests {
 }
 
 /// returns TSteps associated with a transition between two given nodes
+/// EFFECT: mutates steps
 fn process_nodes(steps: &mut Vec<TStep>, prev_node: Node, node: Node) {
     if prev_node.line != node.line && prev_node.station != node.station {
         steps.push(Ensure(node.line.clone()));
@@ -581,8 +582,49 @@ fn process_nodes(steps: &mut Vec<TStep>, prev_node: Node, node: Node) {
     }
 }
 
+#[cfg(test)]
+mod process_nodes_tests {
+    use super::process_nodes;
+    use graph::Node;
+    use super::TStep::{Station, Switch, Ensure};
+
+    #[test]
+    fn test_interpret_path() {
+        let prev = Node {
+            station: "Downtown Crossing Station".to_string(),
+            line: "orange".to_string()
+        };
+        let curr = Node {
+            station: "Ruggles Station".to_string(),
+            line: "orange".to_string()
+        };
+        let mut steps = vec![];
+        process_nodes(&mut steps, prev.clone(), curr);
+        assert_eq!(steps, vec![Station("Ruggles Station".to_string(),
+                                       "orange".to_string())]);
+        steps = vec![];
+        let curr = Node {
+            station: "Downtown Crossing Station".to_string(),
+            line: "red".to_string()
+        };
+        process_nodes(&mut steps, prev.clone(), curr);
+        assert_eq!(steps, vec![Switch("orange".to_string(),
+                                      "red".to_string())]);
+        steps = vec![];
+        let curr = Node {
+            station: "Ruggles Station".to_string(),
+            line: "C".to_string()
+        };
+        process_nodes(&mut steps, prev.clone(), curr);
+        assert_eq!(steps, vec![Ensure("C".to_string()),
+                               Station("Ruggles Station".to_string(),
+                                       "C".to_string())]);
+    }
+}
+
 /// Ensure that the first "direction" does not include a Switch
 /// or Ensure (due to non-deterministic starting nodes at a transfer station)
+/// EFFECT: mutates steps
 fn process_first_nodes(steps: &mut Vec<TStep>, prev_node: Node, node: Node) {
     if prev_node.station == node.station {
         steps.push(Station(node.station, node.line));
@@ -592,13 +634,72 @@ fn process_first_nodes(steps: &mut Vec<TStep>, prev_node: Node, node: Node) {
     process_nodes(steps, prev_node, node);
 }
 
+#[cfg(test)]
+mod process_first_nodes_tests {
+    use super::process_first_nodes;
+    use graph::Node;
+    use super::TStep::Station;
+
+    #[test]
+    fn test_process_first_node() {
+        let mut steps = vec![];
+        let prev = Node {
+            station: "Downtown Crossing Station".to_string(),
+            line: "orange".to_string()
+        };
+        let curr = Node {
+            station: "Ruggles Station".to_string(),
+            line: "orange".to_string()
+        };
+        process_first_nodes(&mut steps, prev.clone(), curr);
+        assert_eq!(steps, vec![Station("Downtown Crossing Station".to_string(),
+                                       "orange".to_string()),
+                               Station("Ruggles Station".to_string(),
+                                       "orange".to_string())]);
+        steps = vec![];
+        let curr = Node {
+            station: "Downtown Crossing Station".to_string(),
+            line: "red".to_string()
+        };
+        process_first_nodes(&mut steps, prev.clone(), curr);
+        assert_eq!(steps, vec![Station("Downtown Crossing Station".to_string(),
+                                       "red".to_string())]);
+
+    }
+}
+
+
 /// Ensure that the last "direction" does not include a Switch
 /// or Ensure (due to non-deterministic ending nodes at a transfer station)
+/// EFFECT: mutates steps
 fn prune_end(steps: &mut Vec<TStep>) {
     match steps.pop().unwrap() {
         Station(station, line) => { steps.push(Station(station, line)); },
         _ => {}
     };
+}
+
+#[cfg(test)]
+mod prune_end_tests {
+    use super::prune_end;
+    use super::TStep::{Station, Switch, Ensure};
+
+    #[test]
+    fn test_prine_end() {
+        let mut steps = vec![Station("A".to_string(), "B".to_string())];
+        prune_end(&mut steps);
+        assert_eq!(steps.len(), 1);
+
+        steps.push(Switch("B".to_string(), "C".to_string()));
+        assert_eq!(steps.len(), 2);
+        prune_end(&mut steps);
+        assert_eq!(steps.len(), 1);
+
+        steps.push(Ensure("B".to_string()));
+        assert_eq!(steps.len(), 2);
+        prune_end(&mut steps);
+        assert_eq!(steps.len(), 1);
+    }
 }
 
 /// Open the file as given by filename in the form of a Buffered Reader
