@@ -24,8 +24,6 @@ static END_NODE_LABEL: &'static str = "end_node";
 static START_NODE_POS: usize = 2;
 static END_NODE_POS: usize = 1;
 
-// TODO: don't need to Ensure going inbound
-
 ////////////////////////////////////////////////////////////////////////////
 //                              Macros                                    //
 ////////////////////////////////////////////////////////////////////////////
@@ -134,7 +132,11 @@ pub struct T<'a> {
     stations: HashMap<String, Vec<Node>>,
 
     // Set of disabled stations
-    disabled: HashSet<String>
+    disabled: HashSet<String>,
+
+    // Set of tuples of 'inbound' connections, e.g. line changes that we
+    // don't need to "Ensure" for.
+    inbound_connections: HashSet<(String, String)>
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -149,7 +151,8 @@ impl<'a> T<'a> {
             source_data: HashMap::new(),
             connections: HashSet::new(),
             stations: HashMap::new(),
-            disabled: HashSet::new()
+            disabled: HashSet::new(),
+            inbound_connections: HashSet::new(),
         }
     }
 
@@ -200,6 +203,7 @@ impl<'a> T<'a> {
     fn rebuild_graph(&mut self) {
         self.stations = HashMap::new();
         self.graph = LabeledGraph::new();
+        self.inbound_connections = HashSet::new();
         self.rebuild_lines();
         self.rebuild_connections();
         self.add_unbiased_nodes();
@@ -267,7 +271,10 @@ impl<'a> T<'a> {
             let station_two = match line_two.iter().rev().filter(|&: station| {
                 !self.disabled.contains(*station)
             }).next() {
-                Some(s) => s,
+                Some(s) => {
+                    self.inbound_connections.insert((line_one_name.clone(), line_two_name.clone()));
+                    s
+                },
                 None => {
                     // If line 2 has no stations, fall back to the optional third line
                     // Disable all B C D, you must connect B to green
@@ -282,7 +289,10 @@ impl<'a> T<'a> {
                     match fallback_line.iter().rev().filter(|&: station| {
                         !self.disabled.contains(*station)
                     }).next() {
-                        Some(s) => s,
+                        Some(s) => {
+                            self.inbound_connections.insert((line_one_name.clone(), fback.clone()));
+                            s
+                        }
                         None => { return; }
                     }
                 }
@@ -336,7 +346,7 @@ impl<'a> T<'a> {
         let dest_node = get_node_from_vec!(self, dest, END_NODE_POS, DisabledDest);
         match self.graph.find_shortest_path(start_node, dest_node) {
             Some(path) => {
-                TOk(interpret_path(path))
+                TOk(self.interpret_path(path))
             },
             None => NoSuchPath
         }
@@ -386,6 +396,54 @@ impl<'a> T<'a> {
             ret_vec.sort();
             DisambiguationResult::Suggestions(ret_vec)
         }
+    }
+
+    /// Interpret the path of Nodes as a list of TSteps
+    fn interpret_path(&self, path: Vec<Node>) -> Vec<TStep> {
+        // invariant: path.len() must be > 0
+        assert!(path.len() > 0);
+        if path.len() == 1 {
+            return Vec::new();
+        }
+
+        let mut path_iter = path.into_iter();
+        let mut result_vec = Vec::new();
+        let first_node = path_iter.next().unwrap();
+        let mut prev_node = path_iter.next().unwrap();
+        self.process_first_nodes(&mut result_vec, first_node, prev_node.clone());
+        for node in path_iter {
+            self.process_nodes(&mut result_vec, prev_node, node.clone());
+            prev_node = node;
+        }
+        prune_end(&mut result_vec);
+        result_vec
+    }
+
+    /// returns TSteps associated with a transition between two given nodes
+    /// EFFECT: mutates steps
+    fn process_nodes(&self, steps: &mut Vec<TStep>, prev_node: Node, node: Node) {
+        if prev_node.line != node.line && prev_node.station != node.station {
+            if !self.inbound_connections.contains(&(prev_node.line.clone(), node.line.clone())) {
+                steps.push(Ensure(node.line.clone()));
+            }
+            steps.push(Station(node.station, node.line));
+        } else if prev_node.line != node.line {
+            steps.push(Switch(prev_node.line, node.line));
+        } else {
+            steps.push(Station(node.station, node.line));
+        }
+    }
+
+    /// Ensure that the first "direction" does not include a Switch
+    /// (due to extra starting transition at a transfer station)
+    /// EFFECT: mutates steps
+    fn process_first_nodes(&self, steps: &mut Vec<TStep>, prev_node: Node, node: Node) {
+        if prev_node.station == node.station {
+            steps.push(Station(node.station, node.line));
+            return;
+        }
+        steps.push(Station(prev_node.station.clone(), prev_node.line.clone()));
+        self.process_nodes(steps, prev_node, node);
     }
 }
 
@@ -596,27 +654,6 @@ mod t_tests {
     }
 }
 
-/// Interpret the path of Nodes as a list of TSteps
-fn interpret_path(path: Vec<Node>) -> Vec<TStep> {
-    // invariant: path.len() must be > 0
-    assert!(path.len() > 0);
-    if path.len() == 1 {
-        return Vec::new();
-    }
-
-    let mut path_iter = path.into_iter();
-    let mut result_vec = Vec::new();
-    let first_node = path_iter.next().unwrap();
-    let mut prev_node = path_iter.next().unwrap();
-    process_first_nodes(&mut result_vec, first_node, prev_node.clone());
-    for node in path_iter {
-        process_nodes(&mut result_vec, prev_node, node.clone());
-        prev_node = node;
-    }
-    prune_end(&mut result_vec);
-    result_vec
-}
-
 #[cfg(test)]
 mod interpret_path_tests {
     use super::interpret_path;
@@ -652,19 +689,6 @@ mod interpret_path_tests {
         expect.push(Ensure("C".to_string()));
         expect.push(Station("State Station".to_string(), "C".to_string()));
         assert_eq!(interpret_path(path.clone()), expect);
-    }
-}
-
-/// returns TSteps associated with a transition between two given nodes
-/// EFFECT: mutates steps
-fn process_nodes(steps: &mut Vec<TStep>, prev_node: Node, node: Node) {
-    if prev_node.line != node.line && prev_node.station != node.station {
-        steps.push(Ensure(node.line.clone()));
-        steps.push(Station(node.station, node.line));
-    } else if prev_node.line != node.line {
-        steps.push(Switch(prev_node.line, node.line));
-    } else {
-        steps.push(Station(node.station, node.line));
     }
 }
 
@@ -706,18 +730,6 @@ mod process_nodes_tests {
                                Station("Ruggles Station".to_string(),
                                        "C".to_string())]);
     }
-}
-
-/// Ensure that the first "direction" does not include a Switch
-/// or Ensure (due to non-deterministic starting nodes at a transfer station)
-/// EFFECT: mutates steps
-fn process_first_nodes(steps: &mut Vec<TStep>, prev_node: Node, node: Node) {
-    if prev_node.station == node.station {
-        steps.push(Station(node.station, node.line));
-        return;
-    }
-    steps.push(Station(prev_node.station.clone(), prev_node.line.clone()));
-    process_nodes(steps, prev_node, node);
 }
 
 #[cfg(test)]
