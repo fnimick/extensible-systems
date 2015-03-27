@@ -5,7 +5,6 @@
     on the T structure
 "]
 
-
 use t::TStep;
 use t::TQueryResult;
 use t::TOperationResult;
@@ -24,7 +23,6 @@ static DISABLED_DEST: &'static str = "disabled destination: ";
 static NO_SUCH_DISABLE: &'static str = "no such station to disable: ";
 static NO_SUCH_ENABLE: &'static str = "no such station to enable: ";
 static NO_SUCH_PATH: &'static str = "No path exists.\n";
-//static EXCESSIVE_DISABLING_MESSAGE: &'static str = "You've disabled too many things, aborting!";
 
 #[allow(unused_must_use)]
 /// Print to the output writer the result of calling find_path on the T.
@@ -89,7 +87,6 @@ mod output_toperation_result_tests {
     use std::io::MemWriter;
     use super::{output_enable_station, output_disable_station};
     use super::{NO_SUCH_ENABLE, NO_SUCH_DISABLE, SUCCESS_OP, DISAMBIG_OP};
-    //use super::{DISAMBIG_START, DISAMBIG_DEST, NO_SUCH_START, NO_SUCH_DEST, NO_SUCH_PATH};
 
     #[test]
     fn test_output_toperation_result() {

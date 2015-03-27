@@ -4,6 +4,8 @@
 
     This module contains the code to load the T data structure and start the
     server that listens for and handles user queries.
+
+    ASSUMPTIONS: don't print when passing through a disabled station
 "]
 extern crate regex;
 
@@ -24,8 +26,6 @@ mod t;
 mod query;
 mod graph;
 mod print;
-
-// ASSUMPTIONS: don't print when passing through a disabled station
 
 #[cfg(not(test))]
 fn main() {
