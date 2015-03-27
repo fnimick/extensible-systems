@@ -452,8 +452,9 @@ mod t_tests {
     use super::T;
     use super::{TQueryResult, DisambiguationResult};
     use super::TQueryResult::{TOk, DisambiguateStart, DisambiguateDestination, NoSuchStart, NoSuchDest, NoSuchPath};
-    use super::TStep::Station;
+    use super::TStep::{Station, Switch, Ensure};
     use std::collections::HashSet;
+    use graph::Node;
 
     #[test]
     fn test_read_data_file() {
@@ -652,21 +653,15 @@ mod t_tests {
         assert_eq!(t.stations.get("A").unwrap().len(), 1);
         assert_eq!(t.stations.get("B").unwrap().len(), 4);
     }
-}
-
-#[cfg(test)]
-mod interpret_path_tests {
-    use super::interpret_path;
-    use graph::Node;
-    use super::TStep::{Station, Switch, Ensure};
 
     #[test]
     fn test_interpret_path() {
+        let t = T::new();
         let mut path = vec![Node {
             station: "Downtown Crossing Station".to_string(),
             line: "orange".to_string()
         }];
-        assert_eq!(interpret_path(path.clone()), vec![]);
+        assert_eq!(t.interpret_path(path.clone()), vec![]);
         path.push(Node {
             station: "Ruggles Station".to_string(),
             line: "orange".to_string()
@@ -675,12 +670,12 @@ mod interpret_path_tests {
                                       "orange".to_string()),
                               Station("Ruggles Station".to_string(),
                                       "orange".to_string())];
-        assert_eq!(interpret_path(path.clone()), expect);
+        assert_eq!(t.interpret_path(path.clone()), expect);
         path.push(Node {
             station: "Ruggles Station".to_string(),
             line: "blue".to_string()
         });
-        assert_eq!(interpret_path(path.clone()), expect);
+        assert_eq!(t.interpret_path(path.clone()), expect);
         path.push(Node {
             station: "State Station".to_string(),
             line: "C".to_string()
@@ -688,18 +683,12 @@ mod interpret_path_tests {
         expect.push(Switch("orange".to_string(), "blue".to_string()));
         expect.push(Ensure("C".to_string()));
         expect.push(Station("State Station".to_string(), "C".to_string()));
-        assert_eq!(interpret_path(path.clone()), expect);
+        assert_eq!(t.interpret_path(path.clone()), expect);
     }
-}
-
-#[cfg(test)]
-mod process_nodes_tests {
-    use super::process_nodes;
-    use graph::Node;
-    use super::TStep::{Station, Switch, Ensure};
 
     #[test]
-    fn test_interpret_path() {
+    fn test_process_nodes() {
+        let t = T::new();
         let prev = Node {
             station: "Downtown Crossing Station".to_string(),
             line: "orange".to_string()
@@ -709,7 +698,7 @@ mod process_nodes_tests {
             line: "orange".to_string()
         };
         let mut steps = vec![];
-        process_nodes(&mut steps, prev.clone(), curr);
+        t.process_nodes(&mut steps, prev.clone(), curr);
         assert_eq!(steps, vec![Station("Ruggles Station".to_string(),
                                        "orange".to_string())]);
         steps = vec![];
@@ -717,7 +706,7 @@ mod process_nodes_tests {
             station: "Downtown Crossing Station".to_string(),
             line: "red".to_string()
         };
-        process_nodes(&mut steps, prev.clone(), curr);
+        t.process_nodes(&mut steps, prev.clone(), curr);
         assert_eq!(steps, vec![Switch("orange".to_string(),
                                       "red".to_string())]);
         steps = vec![];
@@ -725,21 +714,15 @@ mod process_nodes_tests {
             station: "Ruggles Station".to_string(),
             line: "C".to_string()
         };
-        process_nodes(&mut steps, prev.clone(), curr);
+        t.process_nodes(&mut steps, prev.clone(), curr);
         assert_eq!(steps, vec![Ensure("C".to_string()),
                                Station("Ruggles Station".to_string(),
                                        "C".to_string())]);
     }
-}
-
-#[cfg(test)]
-mod process_first_nodes_tests {
-    use super::process_first_nodes;
-    use graph::Node;
-    use super::TStep::Station;
 
     #[test]
     fn test_process_first_node() {
+        let t = T::new();
         let mut steps = vec![];
         let prev = Node {
             station: "Downtown Crossing Station".to_string(),
@@ -749,7 +732,7 @@ mod process_first_nodes_tests {
             station: "Ruggles Station".to_string(),
             line: "orange".to_string()
         };
-        process_first_nodes(&mut steps, prev.clone(), curr);
+        t.process_first_nodes(&mut steps, prev.clone(), curr);
         assert_eq!(steps, vec![Station("Downtown Crossing Station".to_string(),
                                        "orange".to_string()),
                                Station("Ruggles Station".to_string(),
@@ -759,13 +742,12 @@ mod process_first_nodes_tests {
             station: "Downtown Crossing Station".to_string(),
             line: "red".to_string()
         };
-        process_first_nodes(&mut steps, prev.clone(), curr);
+        t.process_first_nodes(&mut steps, prev.clone(), curr);
         assert_eq!(steps, vec![Station("Downtown Crossing Station".to_string(),
                                        "red".to_string())]);
 
     }
 }
-
 
 /// Ensure that the last "direction" does not include a Switch
 /// or Ensure (due to non-deterministic ending nodes at a transfer station)
