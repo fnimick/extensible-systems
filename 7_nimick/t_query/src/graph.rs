@@ -235,3 +235,56 @@ impl LabeledGraph {
         }
     }
 }
+
+#[cfg(test)]
+mod labeled_graph_test {
+    use super::{Graph, LabeledGraph};
+    use super::Node;
+
+    #[test]
+    fn test_add_edge() {
+        let mut lg = LabeledGraph::new();
+        let mut g = Graph::new();
+        assert!(lg.labels.is_empty());
+        assert!(lg.indices.is_empty());
+        assert_eq!(lg.graph, g);
+        let a = Node { station: "a".to_string(), line: "a".to_string() };
+        let b = Node { station: "b".to_string(), line: "b".to_string() };
+        let c = Node { station: "c".to_string(), line: "c".to_string() };
+        lg.add_edge(&a, &b, None, false);
+        assert_eq!(*lg.labels.get(&a).unwrap(), 0);
+        assert_eq!(*lg.labels.get(&b).unwrap(), 1);
+        assert_eq!(lg.indices, vec![a.clone(), b.clone()]);
+        g.add_node();
+        g.add_node();
+        g.add_edge(0, 1, None, false);
+        assert_eq!(lg.graph, g);
+        lg.add_edge(&c, &b, None, true);
+        assert_eq!(*lg.labels.get(&a).unwrap(), 0);
+        assert_eq!(*lg.labels.get(&b).unwrap(), 1);
+        assert_eq!(*lg.labels.get(&c).unwrap(), 2);
+        assert_eq!(lg.indices, vec![a.clone(), b.clone(), c.clone()]);
+        g.add_node();
+        g.add_edge(2, 1, None, true);
+        assert_eq!(lg.graph, g);
+    }
+
+    #[test]
+    fn test_shortest_path() {
+        let mut g = LabeledGraph::new();
+        let a = Node { station: "a".to_string(), line: "a".to_string() };
+        let b = Node { station: "b".to_string(), line: "b".to_string() };
+        let c = Node { station: "c".to_string(), line: "c".to_string() };
+        let d = Node { station: "d".to_string(), line: "d".to_string() };
+        g.add_edge(&a, &b, None, true);
+        g.add_edge(&b, &c, None, true);
+        g.add_edge(&c, &d, None, true);
+        assert_eq!(g.find_shortest_path(&a, &b).unwrap().len(), 2);
+        assert_eq!(g.find_shortest_path(&b, &c).unwrap().len(), 2);
+        assert_eq!(g.find_shortest_path(&a, &c).unwrap().len(), 3);
+        assert_eq!(g.find_shortest_path(&c, &a), None);
+        assert_eq!(g.find_shortest_path(&d, &a), None);
+        assert_eq!(g.find_shortest_path(&a, &d).unwrap(),
+                   vec![a.clone(), b.clone(), c.clone(), d.clone()]);
+    }
+}
