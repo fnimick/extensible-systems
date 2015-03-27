@@ -114,6 +114,7 @@ impl Graph {
 #[cfg(test)]
 mod graph_test {
     use super::Graph;
+    use super::Edge;
 
     #[test]
     fn test_add_node() {
@@ -123,18 +124,27 @@ mod graph_test {
         assert_eq!(g.edges.len(), 1);
     }
 
-    //#[test]
-    /*
+    #[test]
     fn test_add_edge() {
         let mut g = Graph::new();
         g.add_node();
         g.add_node();
         assert!(g.edges[0].is_empty());
         assert!(g.edges[1].is_empty());
-        g.add_edge(0, 1);
-        assert_eq!(g.edges[0], BitvSet::from_bitv(Bitv::from_bytes(&[0b01000000])));
-        assert_eq!(g.edges[1], BitvSet::from_bitv(Bitv::from_bytes(&[0b10000000])));
-    }*/
+        g.add_edge(0, 1, None, true);
+        assert!(g.edges[0].contains(&Edge { node: 1, cost: 1 }));
+        assert!(!g.edges[1].contains(&Edge { node: 0, cost: 1 }));
+        g.add_edge(1, 0, None, true);
+        assert!(g.edges[1].contains(&Edge { node: 0, cost: 1 }));
+        g = Graph::new();
+        g.add_node();
+        g.add_node();
+        assert!(g.edges[0].is_empty());
+        assert!(g.edges[1].is_empty());
+        g.add_edge(0, 1, None, false);
+        assert!(g.edges[0].contains(&Edge { node: 1, cost: 1 }));
+        assert!(g.edges[1].contains(&Edge { node: 0, cost: 1 }));
+    }
 
     #[test]
     #[should_fail]
@@ -156,10 +166,10 @@ mod graph_test {
         g.add_edge(1, 2, None, false);
         g.add_edge(0, 2, Some(4), false);
         g.add_edge(2, 3, None, false);
-        //assert_eq!(g.find_shortest_path(0, 1).unwrap().len(), 2);
-        //assert_eq!(g.find_shortest_path(1, 2).unwrap().len(), 2);
+        assert_eq!(g.find_shortest_path(0, 1).unwrap().len(), 2);
+        assert_eq!(g.find_shortest_path(1, 2).unwrap().len(), 2);
         assert_eq!(g.find_shortest_path(0, 2).unwrap().len(), 3);
-        //assert_eq!(g.find_shortest_path(0, 3).unwrap().len(), 3);
+        assert_eq!(g.find_shortest_path(0, 3).unwrap().len(), 4);
     }
 }
 
