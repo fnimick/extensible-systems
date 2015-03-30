@@ -8,3 +8,7 @@ links = "miniz"
 
 [build-dependencies]
 gcc = "= 0.1.5"
+
+[lib]
+name = "rzlib"
+crate-type = ["staticlib"]
