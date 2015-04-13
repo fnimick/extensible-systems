@@ -1,3 +1,3 @@
 #!/bin/sh
 
-julia gunzip.jl README.txt.gz
+julia gunzip.jl raven.txt.gz
