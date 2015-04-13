@@ -1,0 +1,96 @@
+Creating 0.0009765625 mb file
+Testing 0.0009765625 mb file
+Original: 0.00717524, Rusty: 0.00769977, 1.07310278123x slower
+
+Creating 0.001953125 mb file
+Testing 0.001953125 mb file
+Original: 0.00751723, Rusty: 0.00798329, 1.06199890119x slower
+
+Creating 0.00390625 mb file
+Testing 0.00390625 mb file
+Original: 0.00713907, Rusty: 0.00774347, 1.0846608872x slower
+
+Creating 0.0078125 mb file
+Testing 0.0078125 mb file
+Original: 0.00734739, Rusty: 0.0084057, 1.14403890361x slower
+
+Creating 0.015625 mb file
+Testing 0.015625 mb file
+Original: 0.00767126, Rusty: 0.00930848, 1.21342256683x slower
+
+Creating 0.03125 mb file
+Testing 0.03125 mb file
+Original: 0.0075995, Rusty: 0.01068876, 1.40650832292x slower
+
+Creating 0.0625 mb file
+Testing 0.0625 mb file
+Original: 0.00866236, Rusty: 0.0154674, 1.78558729953x slower
+
+Creating 0.125 mb file
+Testing 0.125 mb file
+Original: 0.00891848, Rusty: 0.02281526, 2.55820050053x slower
+
+Creating 0.25 mb file
+Testing 0.25 mb file
+Original: 0.00963583, Rusty: 0.03632011, 3.76927675146x slower
+
+Creating 0.5 mb file
+Testing 0.5 mb file
+Original: 0.01212883, Rusty: 0.06711274, 5.53332349452x slower
+
+Creating 1 mb file
+Testing 1 mb file
+Original: 0.02558199, Rusty: 0.16018781, 6.26174156115x slower
+
+Creating 2 mb file
+Testing 2 mb file
+Original: 0.02990317, Rusty: 0.27296964, 9.12845159894x slower
+
+Creating 4 mb file
+Testing 4 mb file
+Original: 0.07613267, Rusty: 0.54279494, 7.12959285416x slower
+
+Creating 8 mb file
+Testing 8 mb file
+Original: 0.1381175, Rusty: 0.99593862, 7.21080688544x slower
+
+Creating 16 mb file
+Testing 16 mb file
+Original: 0.25366736, Rusty: 1.87888447, 7.40688305346x slower
+
+Creating 32 mb file
+Testing 32 mb file
+Original: 0.42010032, Rusty: 3.63608482, 8.65527743469x slower
+
+Creating 64 mb file
+Testing 64 mb file
+Original: 0.97376026, Rusty: 7.43929671, 7.63976208066x slower
+
+Creating 128 mb file
+Testing 128 mb file
+Original: 1.92923252, Rusty: 14.82259664, 7.68315715516x slower
+
+Creating 256 mb file
+Testing 256 mb file
+Original: 4.22811944, Rusty: 34.1126978, 8.06805443509x slower
+
+Size          Original            Rust
+1024          0.00717524          0.0073473969977
+2048          0.00751723          0.00798329
+4096          0.00713907          0.00774347
+8192          0.007347394739      0.0084057
+16384         0.00767126          0.00930848
+32768         0.0075995           0.010688766360848
+25536         0.00866236          0.0154674
+131072        0.00891848          0.02281526
+262144        0.009635833         0.03632011
+524288        0.01212883          0.06711274
+1048576       0.02558199          0.16018781
+2097152       0.02990317          0.27296964
+4194304       0.07613267          0.54279494
+8388608       0.272969641381175   0.99593862
+16777216      0.25366736          1.87888447
+33554432      0.42010032          3.63608482
+67108864      0.97376026          7.43929671
+134217728     1.929232521         4.82259664
+268435456     4.22811944          34.1126978
